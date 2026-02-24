@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nes
 import { OrganizationsService } from './organizations.service';
 import { Roles } from '../common/decorators';
 
-@Controller('admin/organizations')
+@Controller('organizations')
 @Roles('SYSTEM_ADMIN')
 export class OrganizationsController {
   constructor(private service: OrganizationsService) {}

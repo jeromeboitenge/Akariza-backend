@@ -3,7 +3,7 @@ import { PurchasesService } from './purchases.service';
 import { Roles } from '../common/decorators';
 
 @Controller('purchases')
-@Roles('BOSS', 'MANAGER')
+@Roles('BOSS', 'MANAGER', 'CASHIER')
 export class PurchasesController {
   constructor(private service: PurchasesService) {}
 

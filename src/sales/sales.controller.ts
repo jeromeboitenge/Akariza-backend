@@ -13,7 +13,7 @@ export class SalesController {
   }
 
   @Get()
-  @Roles('BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER')
   findAll(@Request() req) {
     return this.service.findAll(req.user.organizationId);
   }

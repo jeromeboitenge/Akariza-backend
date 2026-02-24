@@ -29,47 +29,57 @@ export class AuthService {
     });
   }
 
-  async adminLogin(email: string, password: string) {
+  async login(email: string, password: string) {
+    // Try user login first
+    const user = await this.prisma.user.findFirst({ where: { email, isActive: true } });
+    if (user) {
+      const isValid = await this.comparePassword(password, user.password);
+      if (!isValid) throw new UnauthorizedException('Invalid credentials');
+
+      const payload = { sub: user.id, organizationId: user.organizationId, role: user.role, type: 'user' };
+      const refreshToken = this.generateRefreshToken(payload);
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          organizationId: user.organizationId,
+        },
+        accessToken: this.generateAccessToken(payload),
+        refreshToken,
+      };
+    }
+
+    // Try admin login
     const admin = await this.prisma.admin.findUnique({ where: { email } });
-    if (!admin || !admin.isActive) throw new UnauthorizedException('Invalid credentials');
+    if (admin && admin.isActive) {
+      const isValid = await this.comparePassword(password, admin.password);
+      if (!isValid) throw new UnauthorizedException('Invalid credentials');
 
-    const isValid = await this.comparePassword(password, admin.password);
-    if (!isValid) throw new UnauthorizedException('Invalid credentials');
+      const payload = { sub: admin.id, role: admin.role, type: 'admin' };
+      return {
+        user: { id: admin.id, email: admin.email, fullName: admin.fullName, role: admin.role },
+        accessToken: this.generateAccessToken(payload),
+        refreshToken: this.generateRefreshToken(payload),
+      };
+    }
 
-    const payload = { sub: admin.id, role: admin.role, type: 'admin' };
-    return {
-      user: { id: admin.id, email: admin.email, fullName: admin.fullName, role: admin.role },
-      accessToken: this.generateAccessToken(payload),
-      refreshToken: this.generateRefreshToken(payload),
-    };
+    throw new UnauthorizedException('Invalid credentials');
+  }
+
+  async adminLogin(email: string, password: string) {
+    return this.login(email, password);
   }
 
   async userLogin(email: string, password: string) {
-    const user = await this.prisma.user.findFirst({ where: { email, isActive: true } });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-
-    const isValid = await this.comparePassword(password, user.password);
-    if (!isValid) throw new UnauthorizedException('Invalid credentials');
-
-    const payload = { sub: user.id, organizationId: user.organizationId, role: user.role, type: 'user' };
-    const refreshToken = this.generateRefreshToken(payload);
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        organizationId: user.organizationId,
-      },
-      accessToken: this.generateAccessToken(payload),
-      refreshToken,
-    };
+    return this.login(email, password);
   }
 
   async refreshToken(token: string) {

@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   app.enableCors();
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ 
     whitelist: true, 
     transform: true,
@@ -55,7 +55,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('api/v1/docs', app, document, {
     customSiteTitle: 'Akariza API Documentation',
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
     customCss: '.swagger-ui .topbar { display: none }',
@@ -65,7 +65,7 @@ async function bootstrap() {
   await app.listen(port);
   
   console.log(`🚀 Akariza Backend running on port ${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  console.log(`📚 API Documentation: http://localhost:${port}/api/v1/docs`);
 }
 
 bootstrap();

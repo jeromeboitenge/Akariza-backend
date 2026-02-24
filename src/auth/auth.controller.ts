@@ -10,21 +10,12 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
-  @Post('admin/login')
-  @ApiOperation({ summary: 'Admin login' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async adminLogin(@Body() loginDto: LoginDto) {
-    return this.authService.adminLogin(loginDto.email, loginDto.password);
-  }
-
-  @Public()
   @Post('login')
-  @ApiOperation({ summary: 'User login (Boss, Manager, Cashier)' })
+  @ApiOperation({ summary: 'Login (Admin, Boss, Manager, Cashier)' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async userLogin(@Body() loginDto: LoginDto) {
-    return this.authService.userLogin(loginDto.email, loginDto.password);
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto.email, loginDto.password);
   }
 
   @Public()
