@@ -1,18 +1,23 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { Roles } from '../common/decorators';
 
+@ApiTags('Products')
+@ApiBearerAuth('JWT-auth')
 @Controller('products')
 export class ProductsController {
   constructor(private service: ProductsService) {}
 
   @Post()
   @Roles('BOSS', 'MANAGER')
+  @ApiOperation({ summary: 'Create new product' })
   create(@Body() data: any, @Request() req) {
     return this.service.create(data, req.user.organizationId, req.user.id);
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get all products' })
   findAll(@Request() req) {
     return this.service.findAll(req.user.organizationId);
   }
