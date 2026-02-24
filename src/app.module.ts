@@ -13,6 +13,16 @@ import { SalesModule } from './sales/sales.module';
 import { StockModule } from './stock/stock.module';
 import { ReportsModule } from './reports/reports.module';
 import { SyncModule } from './sync/sync.module';
+import { BranchesModule } from './branches/branches.module';
+import { CustomersModule } from './customers/customers.module';
+import { EmployeesModule } from './employees/employees.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { ExpensesModule } from './expenses/expenses.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { TasksModule } from './tasks/tasks.module';
+import { MessagesModule } from './messages/messages.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -27,6 +37,16 @@ import { SyncModule } from './sync/sync.module';
     StockModule,
     ReportsModule,
     SyncModule,
+    BranchesModule,
+    CustomersModule,
+    EmployeesModule,
+    PromotionsModule,
+    PurchaseOrdersModule,
+    ExpensesModule,
+    NotificationsModule,
+    TasksModule,
+    MessagesModule,
+    AnalyticsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
