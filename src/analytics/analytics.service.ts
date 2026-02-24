@@ -27,13 +27,12 @@ export class AnalyticsService {
         },
         _sum: { finalAmount: true },
       }),
-      this.prisma.product.count({
-        where: {
-          organizationId,
-          isActive: true,
-          currentStock: { lte: this.prisma.product.fields.minStockLevel },
-        },
-      }),
+      this.prisma.$queryRaw<any[]>`
+        SELECT COUNT(*) as count FROM "Product" 
+        WHERE "organizationId" = ${organizationId}::uuid
+        AND "isActive" = true 
+        AND "currentStock" <= "minStockLevel"
+      `,
       this.prisma.task.count({
         where: { organizationId, status: 'PENDING' },
       }),
@@ -43,7 +42,7 @@ export class AnalyticsService {
       todaySales: todaySales._sum.finalAmount || 0,
       todayTransactions: todaySales._count,
       monthSales: monthSales._sum.finalAmount || 0,
-      lowStockCount: lowStock,
+      lowStockCount: Number(lowStock[0]?.count || 0),
       pendingTasks,
     };
   }

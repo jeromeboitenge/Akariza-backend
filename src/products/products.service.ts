@@ -28,12 +28,11 @@ export class ProductsService {
   }
 
   findLowStock(organizationId: string) {
-    return this.prisma.product.findMany({
-      where: {
-        organizationId,
-        isActive: true,
-        currentStock: { lte: this.prisma.product.fields.minStockLevel },
-      },
-    });
+    return this.prisma.$queryRaw`
+      SELECT * FROM "Product" 
+      WHERE "organizationId" = ${organizationId}::uuid
+      AND "isActive" = true 
+      AND "currentStock" <= "minStockLevel"
+    `;
   }
 }
