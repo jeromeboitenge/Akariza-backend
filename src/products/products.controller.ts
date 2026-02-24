@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { Roles } from '../common/decorators';
+import { CreateProductDto } from '../common/dto/examples.dto';
 
 @ApiTags('Products')
 @ApiBearerAuth('JWT-auth')
@@ -12,7 +13,8 @@ export class ProductsController {
   @Post()
   @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Create new product' })
-  create(@Body() data: any, @Request() req) {
+  @ApiBody({ type: CreateProductDto })
+  create(@Body() data: CreateProductDto, @Request() req) {
     return this.service.create(data, req.user.organizationId, req.user.id);
   }
 
