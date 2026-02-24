@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  fullName  String
+  role      String   @default("SYSTEM_ADMIN")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizations Organization[]
+}
+
+model Organization {
+  id           String   @id @default(uuid())
+  name         String
+  businessType String
+  address      String
+  phone        String
+  email        String
+  isActive     Boolean  @default(true)
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdBy        Admin              @relation(fields: [createdById], references: [id])
+  users            User[]
+  products         Product[]
+  suppliers        Supplier[]
+  purchases        Purchase[]
+  sales            Sale[]
+  stockTransactions StockTransaction[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String
+  password       String
+  fullName       String
+  role           String
+  isActive       Boolean  @default(true)
+  refreshToken   String?
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  createdProducts   Product[]          @relation("ProductCreator")
+  createdSuppliers  Supplier[]         @relation("SupplierCreator")
+  createdPurchases  Purchase[]         @relation("PurchaseCreator")
+  createdSales      Sale[]             @relation("SaleCreator")
+  stockTransactions StockTransaction[] @relation("StockTransactionCreator")
+  auditLogs         AuditLog[]
+
+  @@unique([organizationId, email])
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  sku            String
+  category       String   @default("General")
+  unit           String   @default("piece")
+  costPrice      Float
+  sellingPrice   Float
+  currentStock   Float    @default(0)
+  minStockLevel  Float    @default(0)
+  isActive       Boolean  @default(true)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  createdBy         User               @relation("ProductCreator", fields: [createdById], references: [id])
+  purchaseItems     PurchaseItem[]
+  saleItems         SaleItem[]
+  stockTransactions StockTransaction[]
+
+  @@unique([organizationId, sku])
+}
+
+model Supplier {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  contactPerson  String
+  phone          String
+  email          String?
+  address        String
+  isActive       Boolean  @default(true)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation("SupplierCreator", fields: [createdById], references: [id])
+  purchases    Purchase[]
+}
+
+model Purchase {
+  id                String   @id @default(uuid())
+  organizationId    String
+  purchaseNumber    String
+  supplierId        String
+  totalAmount       Float
+  paymentStatus     String   @default("UNPAID")
+  amountPaid        Float    @default(0)
+  notes             String?
+  syncedFromMobile  Boolean  @default(false)
+  mobileRecordId    String?
+  createdById       String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  supplier     Supplier       @relation(fields: [supplierId], references: [id])
+  createdBy    User           @relation("PurchaseCreator", fields: [createdById], references: [id])
+  items        PurchaseItem[]
+
+  @@unique([organizationId, mobileRecordId])
+}
+
+model PurchaseItem {
+  id         String @id @default(uuid())
+  purchaseId String
+  productId  String
+  quantity   Float
+  costPrice  Float
+  total      Float
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+}
+
+model Sale {
+  id               String   @id @default(uuid())
+  organizationId   String
+  saleNumber       String
+  totalAmount      Float
+  paymentMethod    String
+  customerName     String?
+  syncedFromMobile Boolean  @default(false)
+  mobileRecordId   String?
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation("SaleCreator", fields: [createdById], references: [id])
+  items        SaleItem[]
+
+  @@unique([organizationId, mobileRecordId])
+  @@index([organizationId, createdAt])
+}
+
+model SaleItem {
+  id           String @id @default(uuid())
+  saleId       String
+  productId    String
+  quantity     Float
+  sellingPrice Float
+  costPrice    Float
+  total        Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model StockTransaction {
+  id             String   @id @default(uuid())
+  organizationId String
+  productId      String
+  type           String
+  quantity       Float
+  referenceType  String
+  referenceId    String
+  balanceAfter   Float
+  notes          String?
+  createdById    String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+  createdBy    User         @relation("StockTransactionCreator", fields: [createdById], references: [id])
+
+  @@index([organizationId, productId, createdAt])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?
+  userId         String
+  action         String
+  resource       String
+  resourceId     String?
+  details        Json?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, createdAt])
+}
