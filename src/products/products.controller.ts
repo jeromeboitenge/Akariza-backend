@@ -13,7 +13,38 @@ export class ProductsController {
   @Post()
   @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Create new product' })
-  @ApiBody({ type: CreateProductDto })
+  @ApiBody({ 
+    type: CreateProductDto,
+    examples: {
+      'With Expiry': {
+        value: {
+          name: 'Fresh Milk 1L',
+          sku: 'MILK-1L',
+          category: 'Dairy',
+          unit: 'liter',
+          costPrice: 800,
+          sellingPrice: 1000,
+          expirationDate: '2026-03-15',
+          currentStock: 50,
+          minStockLevel: 10,
+          hasExpiry: true
+        }
+      },
+      'Without Expiry': {
+        value: {
+          name: 'Rice 25kg',
+          sku: 'RICE-25',
+          category: 'Grains',
+          unit: 'bag',
+          costPrice: 18000,
+          sellingPrice: 22000,
+          currentStock: 100,
+          minStockLevel: 20,
+          hasExpiry: false
+        }
+      }
+    }
+  })
   create(@Body() data: CreateProductDto, @Request() req) {
     return this.service.create(data, req.user.organizationId, req.user.id);
   }

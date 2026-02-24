@@ -33,54 +33,40 @@ export class OrganizationsService {
       }
     }
 
-    // If boss data is provided, check if boss email already exists
-    if (data.bossData) {
-      const existingUser = await this.prisma.user.findFirst({
-        where: { email: data.bossData.email },
-      });
+    // Check if boss email already exists
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: data.bossData.email },
+    });
 
-      if (existingUser) {
-        throw new ConflictException('User with this email already exists');
-      }
-
-      const hashedPassword = await this.authService.hashPassword(data.bossData.password);
-
-      return this.prisma.$transaction(async (tx) => {
-        const org = await tx.organization.create({
-          data: {
-            name: data.name,
-            businessType: data.businessType,
-            address: data.address,
-            phone: data.phone,
-            email: data.email,
-            createdById: adminId,
-          },
-        });
-
-        const boss = await tx.user.create({
-          data: {
-            organizationId: org.id,
-            email: data.bossData.email,
-            password: hashedPassword,
-            fullName: data.bossData.fullName,
-            role: 'BOSS',
-          },
-        });
-
-        return { organization: org, boss };
-      });
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
     }
 
-    // Create organization only
-    return this.prisma.organization.create({
-      data: {
-        name: data.name,
-        businessType: data.businessType,
-        address: data.address,
-        phone: data.phone,
-        email: data.email,
-        createdById: adminId,
-      },
+    const hashedPassword = await this.authService.hashPassword(data.bossData.password);
+
+    return this.prisma.$transaction(async (tx) => {
+      const org = await tx.organization.create({
+        data: {
+          name: data.name,
+          businessType: data.businessType,
+          address: data.address,
+          phone: data.phone,
+          email: data.email,
+          createdById: adminId,
+        },
+      });
+
+      const boss = await tx.user.create({
+        data: {
+          organizationId: org.id,
+          email: data.bossData.email,
+          password: hashedPassword,
+          fullName: data.bossData.fullName,
+          role: 'BOSS',
+        },
+      });
+
+      return { organization: org, boss };
     });
   }
 
