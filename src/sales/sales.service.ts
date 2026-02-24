@@ -52,10 +52,23 @@ export class SalesService {
           createdById: userId,
           syncedFromMobile: !!data.mobileRecordId,
           mobileRecordId: data.mobileRecordId,
-          items: { create: enrichedItems },
-        },
+        } as any,
         include: { items: true },
       });
+
+      // Create items separately
+      for (const item of enrichedItems) {
+        await tx.saleItem.create({
+          data: {
+            saleId: sale.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            sellingPrice: item.sellingPrice,
+            costPrice: item.costPrice,
+            total: item.total,
+          },
+        });
+      }
 
       for (const item of enrichedItems) {
         await this.stockService.recordTransaction(

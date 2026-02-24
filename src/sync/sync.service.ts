@@ -37,9 +37,22 @@ export class SyncService {
               syncedFromMobile: true,
               mobileRecordId: saleData.mobileRecordId,
               createdAt: new Date(saleData.createdAt),
-              items: { create: saleData.items },
-            },
+            } as any,
           });
+
+          // Create items separately
+          for (const item of saleData.items) {
+            await tx.saleItem.create({
+              data: {
+                saleId: created.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                sellingPrice: item.sellingPrice,
+                costPrice: item.costPrice,
+                total: item.total,
+              },
+            });
+          }
 
           for (const item of saleData.items) {
             await this.stockService.recordTransaction(
@@ -96,9 +109,21 @@ export class SyncService {
               syncedFromMobile: true,
               mobileRecordId: purchaseData.mobileRecordId,
               createdAt: new Date(purchaseData.createdAt),
-              items: { create: purchaseData.items },
-            },
+            } as any,
           });
+
+          // Create items separately
+          for (const item of purchaseData.items) {
+            await tx.purchaseItem.create({
+              data: {
+                purchaseId: created.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                costPrice: item.costPrice,
+                total: item.quantity * item.costPrice,
+              },
+            });
+          }
 
           for (const item of purchaseData.items) {
             await this.stockService.recordTransaction(

@@ -21,7 +21,7 @@ export class BranchesService {
   findOne(id: string, organizationId: string) {
     return this.prisma.branch.findFirst({
       where: { id, organizationId },
-      include: { users: true, branchInventory: { include: { product: true } } },
+      include: { users: true, products: { include: { product: true } } },
     });
   }
 

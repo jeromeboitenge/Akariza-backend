@@ -32,10 +32,22 @@ export class PurchasesService {
           createdById: userId,
           syncedFromMobile: !!data.mobileRecordId,
           mobileRecordId: data.mobileRecordId,
-          items: { create: data.items },
-        },
+        } as any,
         include: { items: true },
       });
+
+      // Create items separately
+      for (const item of data.items) {
+        await tx.purchaseItem.create({
+          data: {
+            purchaseId: purchase.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            costPrice: item.costPrice,
+            total: item.quantity * item.costPrice,
+          },
+        });
+      }
 
       for (const item of data.items) {
         await this.stockService.recordTransaction(
