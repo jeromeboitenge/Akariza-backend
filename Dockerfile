@@ -20,8 +20,11 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# List dist directory to debug
+RUN ls -la dist/
+
 # Expose port
 EXPOSE 5000
 
 # Start the application
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
