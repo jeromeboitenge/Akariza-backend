@@ -1,18 +1,18 @@
 FROM node:20-alpine
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
-
-# Copy prisma schema
+# Copy prisma schema BEFORE npm install
 COPY prisma ./prisma/
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Install dependencies (postinstall will run prisma generate)
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
