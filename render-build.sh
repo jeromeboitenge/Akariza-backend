@@ -1,5 +1,5 @@
 # Build command
-npm install
+npm install --legacy-peer-deps
 npx prisma generate
 npm run build
 
