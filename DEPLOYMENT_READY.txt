@@ -1,0 +1,238 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    RENDER DEPLOYMENT - READY TO DEPLOY ✅                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 FILES ADDED FOR DEPLOYMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ render.yaml              - Render configuration (Infrastructure as Code)
+✅ render-build.sh          - Build script for Render
+✅ Procfile                 - Process file (Heroku compatible)
+✅ .env.example             - Environment variables template
+✅ health.controller.ts     - Health check endpoint
+✅ RENDER_DEPLOYMENT.md     - Complete deployment guide
+
+📝 FILES UPDATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ package.json             - Added postinstall script, updated migrate command
+✅ src/main.ts              - Added CORS config, listen on 0.0.0.0
+✅ src/app.module.ts        - Added health controller
+✅ .gitignore               - Enhanced for production
+
+🚀 DEPLOYMENT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. PUSH TO GITHUB
+   ─────────────────────────────────────────────────────────────────────────
+   cd /home/boitenge/Desktop/akariza/backend
+   git add .
+   git commit -m "Add Render deployment configuration"
+   git push origin main
+
+2. CREATE RENDER ACCOUNT
+   ─────────────────────────────────────────────────────────────────────────
+   Go to: https://render.com
+   Sign up with GitHub
+
+3. CREATE DATABASE
+   ─────────────────────────────────────────────────────────────────────────
+   Dashboard → New + → PostgreSQL
+   
+   Settings:
+   • Name: akariza-db
+   • Database: akariza
+   • User: akariza_user
+   • Region: Oregon (or closest)
+   • Plan: Free
+   
+   Click "Create Database"
+   Copy the "Internal Database URL"
+
+4. CREATE WEB SERVICE
+   ─────────────────────────────────────────────────────────────────────────
+   Dashboard → New + → Web Service
+   
+   Connect GitHub repository
+   
+   Settings:
+   • Name: akariza-backend
+   • Region: Same as database
+   • Branch: main
+   • Root Directory: (leave blank or "backend" if monorepo)
+   • Runtime: Node
+   • Build Command: npm install && npx prisma generate && npm run build
+   • Start Command: npm run start:prod
+   • Plan: Free
+
+5. ADD ENVIRONMENT VARIABLES
+   ─────────────────────────────────────────────────────────────────────────
+   Click "Advanced" → Add Environment Variables:
+   
+   NODE_ENV=production
+   PORT=5000
+   DATABASE_URL=<paste Internal Database URL from step 3>
+   JWT_SECRET=<generate random 32+ char string>
+   JWT_REFRESH_SECRET=<generate random 32+ char string>
+   JWT_EXPIRES_IN=15m
+   JWT_REFRESH_EXPIRES_IN=7d
+   
+   Generate secrets:
+   openssl rand -base64 32
+
+6. DEPLOY
+   ─────────────────────────────────────────────────────────────────────────
+   Click "Create Web Service"
+   Wait 5-10 minutes for deployment
+
+7. RUN MIGRATIONS
+   ─────────────────────────────────────────────────────────────────────────
+   Once deployed, go to Shell tab:
+   
+   npx prisma migrate deploy
+   
+   (Optional) Seed data:
+   npm run prisma:seed
+
+8. TEST DEPLOYMENT
+   ─────────────────────────────────────────────────────────────────────────
+   Your API: https://akariza-backend.onrender.com
+   
+   Test:
+   curl https://akariza-backend.onrender.com/health
+   
+   Docs:
+   https://akariza-backend.onrender.com/api/v1/docs
+
+🔧 ENVIRONMENT VARIABLES NEEDED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Required:
+├─ NODE_ENV                 production
+├─ PORT                     5000
+├─ DATABASE_URL             (from Render PostgreSQL)
+├─ JWT_SECRET               (generate random string)
+└─ JWT_REFRESH_SECRET       (generate random string)
+
+Optional:
+├─ JWT_EXPIRES_IN           15m
+├─ JWT_REFRESH_EXPIRES_IN   7d
+└─ FRONTEND_URL             (for CORS)
+
+🎯 QUICK DEPLOY (Alternative)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Using render.yaml (Infrastructure as Code):
+
+1. Push code to GitHub
+2. Render Dashboard → New + → Blueprint
+3. Connect repository
+4. Render auto-creates everything from render.yaml
+5. Done!
+
+📊 WHAT HAPPENS DURING DEPLOYMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Render clones your repository
+2. Runs: npm install
+3. Runs: npx prisma generate (creates Prisma client)
+4. Runs: npm run build (compiles TypeScript)
+5. Starts: npm run start:prod
+6. Health check: /health endpoint
+7. Service goes live!
+
+✅ HEALTH CHECK ENDPOINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /health
+Returns:
+{
+  "status": "ok",
+  "timestamp": "2026-02-25T21:00:00.000Z",
+  "uptime": 3600,
+  "environment": "production"
+}
+
+GET /
+Returns:
+{
+  "message": "Akariza Stock Management API",
+  "version": "1.0.0",
+  "docs": "/api/v1/docs",
+  "health": "/health"
+}
+
+🔒 SECURITY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ .env file NOT committed to Git
+✅ Strong JWT secrets (32+ characters)
+✅ Database uses internal URL
+✅ CORS configured for frontend
+✅ HTTPS automatic with Render
+✅ Environment variables in Render dashboard only
+
+⚠️  FREE TIER LIMITATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Service spins down after 15 minutes of inactivity
+• First request after spin-down takes ~30 seconds (cold start)
+• Database expires after 90 days (upgrade to keep)
+• 750 hours/month (enough for 1 service)
+
+Upgrade to Starter ($7/month) for:
+• No spin-down
+• Persistent database
+• Better performance
+
+📱 CONNECT FRONTEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Update your frontend API URL:
+
+React/Next.js:
+const API_URL = 'https://akariza-backend.onrender.com/api/v1';
+
+Flutter:
+const String apiUrl = 'https://akariza-backend.onrender.com/api/v1';
+
+React Native:
+const API_URL = 'https://akariza-backend.onrender.com/api/v1';
+
+🐛 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Build fails:
+→ Check Logs tab for errors
+→ Verify package.json scripts
+→ Ensure all dependencies in package.json
+
+Service won't start:
+→ Check environment variables
+→ Verify DATABASE_URL is correct
+→ Test database connection in Shell
+
+Migrations fail:
+→ Run manually in Shell: npx prisma migrate deploy
+→ Check database is ready
+
+Slow response:
+→ Normal on free tier (cold start)
+→ Upgrade to paid plan for instant response
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Full guide: RENDER_DEPLOYMENT.md
+API docs: https://your-app.onrender.com/api/v1/docs
+Render docs: https://render.com/docs
+
+🎉 YOU'RE READY TO DEPLOY!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All files are configured and ready.
+Just follow the 8 steps above.
+
+Estimated deployment time: 10-15 minutes
+
+Good luck! 🚀

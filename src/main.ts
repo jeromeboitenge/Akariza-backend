@@ -7,7 +7,11 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true,
+  });
+  
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ 
     whitelist: true, 
@@ -62,10 +66,11 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 5000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   
   console.log(`🚀 Akariza Backend running on port ${port}`);
   console.log(`📚 API Documentation: http://localhost:${port}/api/v1/docs`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
 bootstrap();
