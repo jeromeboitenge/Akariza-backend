@@ -4,57 +4,82 @@ import { AnalyticsService } from './analytics.service';
 import { Roles } from '../common/decorators';
 
 @ApiTags('Analytics')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('analytics')
 @Roles('BOSS', 'MANAGER')
 export class AnalyticsController {
   constructor(private service: AnalyticsService) {}
 
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get analytics dashboard' })
+  @ApiOperation({ summary: 'Get real-time dashboard with key metrics' })
   @ApiQuery({ name: 'branchId', required: false })
   getDashboard(@Query('branchId') branchId: string, @Request() req) {
     return this.service.getDashboard(req.user.organizationId, branchId);
   }
 
-  @Get('inventory-turnover')
-  @ApiOperation({ summary: 'Get inventory turnover rate' })
-  @ApiQuery({ name: 'days', required: false, example: 30 })
-  getInventoryTurnover(@Query('days') days: string, @Request() req) {
-    return this.service.getInventoryTurnover(req.user.organizationId, days ? parseInt(days) : 30);
-  }
-
-  @Get('customer-insights')
-  @ApiOperation({ summary: 'Get customer insights' })
-  getCustomerInsights(@Request() req) {
-    return this.service.getCustomerInsights(req.user.organizationId);
-  }
-
-  @Get('branch-comparison')
-  @ApiOperation({ summary: 'Compare branch performance' })
-  @ApiQuery({ name: 'startDate', required: true, example: '2026-02-01' })
-  @ApiQuery({ name: 'endDate', required: true, example: '2026-02-28' })
-  getBranchComparison(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Request() req) {
-    return this.service.getBranchComparison(
+  @Get('sales-trends')
+  @ApiOperation({ summary: 'Get sales trends over time' })
+  @ApiQuery({ name: 'period', required: false, enum: ['daily', 'weekly', 'monthly'], example: 'daily' })
+  @ApiQuery({ name: 'days', required: false, example: 7 })
+  getSalesTrends(
+    @Query('period') period: 'daily' | 'weekly' | 'monthly',
+    @Query('days') days: string,
+    @Request() req
+  ) {
+    return this.service.getSalesTrends(
       req.user.organizationId,
-      new Date(startDate),
-      new Date(endDate),
+      period || 'daily',
+      days ? parseInt(days) : 7
     );
   }
 
-  @Get('employee-performance')
-  @ApiOperation({ summary: 'Get employee performance' })
-  @ApiQuery({ name: 'month', required: true, example: '2026-02-01' })
-  getEmployeePerformance(@Query('month') month: string, @Request() req) {
-    return this.service.getEmployeePerformance(req.user.organizationId, new Date(month));
+  @Get('top-products')
+  @ApiOperation({ summary: 'Get top selling products' })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'days', required: false, example: 30 })
+  getTopProducts(@Query('limit') limit: string, @Query('days') days: string, @Request() req) {
+    return this.service.getTopProducts(
+      req.user.organizationId,
+      limit ? parseInt(limit) : 10,
+      days ? parseInt(days) : 30
+    );
   }
 
-  @Post('daily-summary')
-  @Roles('BOSS')
-  @ApiOperation({ summary: 'Create daily summary' })
-  @ApiQuery({ name: 'date', required: true, example: '2026-02-24' })
-  @ApiQuery({ name: 'branchId', required: false })
-  createDailySummary(@Query('date') date: string, @Query('branchId') branchId: string, @Request() req) {
-    return this.service.createDailySummary(req.user.organizationId, new Date(date), branchId);
+  @Get('low-stock-alerts')
+  @ApiOperation({ summary: 'Get low stock alerts with predictions' })
+  getLowStockAlerts(@Request() req) {
+    return this.service.getLowStockAlerts(req.user.organizationId);
+  }
+
+  @Get('revenue-by-category')
+  @ApiOperation({ summary: 'Get revenue breakdown by product category' })
+  @ApiQuery({ name: 'startDate', required: true, example: '2026-02-01' })
+  @ApiQuery({ name: 'endDate', required: true, example: '2026-02-28' })
+  getRevenueByCategory(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Request() req
+  ) {
+    return this.service.getRevenueByCategory(
+      req.user.organizationId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+  }
+
+  @Get('payment-methods')
+  @ApiOperation({ summary: 'Get payment method breakdown' })
+  @ApiQuery({ name: 'startDate', required: true, example: '2026-02-01' })
+  @ApiQuery({ name: 'endDate', required: true, example: '2026-02-28' })
+  getPaymentMethodBreakdown(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Request() req
+  ) {
+    return this.service.getPaymentMethodBreakdown(
+      req.user.organizationId,
+      new Date(startDate),
+      new Date(endDate)
+    );
   }
 }

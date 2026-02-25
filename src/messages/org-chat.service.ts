@@ -14,6 +14,10 @@ export class OrgChatService {
         message,
         isRead: false,
       },
+      include: {
+        sender: { select: { fullName: true, email: true } },
+        receiver: { select: { fullName: true, email: true } },
+      },
     });
   }
 
@@ -22,6 +26,10 @@ export class OrgChatService {
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
       take: limit,
+      include: {
+        sender: { select: { fullName: true, email: true, role: true } },
+        receiver: { select: { fullName: true, email: true } },
+      },
     });
   }
 
@@ -35,6 +43,10 @@ export class OrgChatService {
         ],
       },
       orderBy: { createdAt: 'asc' },
+      include: {
+        sender: { select: { fullName: true, email: true } },
+        receiver: { select: { fullName: true, email: true } },
+      },
     });
   }
 
