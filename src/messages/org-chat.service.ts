@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
 export class OrgChatService {
@@ -14,10 +14,6 @@ export class OrgChatService {
         message,
         isRead: false,
       },
-      include: {
-        sender: { select: { name: true, email: true } },
-        receiver: { select: { name: true, email: true } },
-      },
     });
   }
 
@@ -26,10 +22,6 @@ export class OrgChatService {
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: {
-        sender: { select: { name: true, email: true, role: true } },
-        receiver: { select: { name: true, email: true } },
-      },
     });
   }
 
@@ -43,10 +35,6 @@ export class OrgChatService {
         ],
       },
       orderBy: { createdAt: 'asc' },
-      include: {
-        sender: { select: { name: true, email: true } },
-        receiver: { select: { name: true, email: true } },
-      },
     });
   }
 
@@ -55,11 +43,11 @@ export class OrgChatService {
       where: { organizationId, isActive: true },
       select: {
         id: true,
-        name: true,
+        fullName: true,
         email: true,
         role: true,
       },
-      orderBy: { name: 'asc' },
+      orderBy: { fullName: 'asc' },
     });
   }
 

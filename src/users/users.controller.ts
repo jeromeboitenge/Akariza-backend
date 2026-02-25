@@ -11,15 +11,14 @@ export class UsersController {
   constructor(private service: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create user' })
+  @ApiOperation({ summary: 'Create user (BOSS only)' })
   @ApiBody({
     schema: {
       example: {
         email: 'newuser@example.com',
         password: 'password123',
-        name: 'John Doe',
-        role: 'MANAGER',
-        phone: '+250788123456'
+        fullName: 'John Doe',
+        role: 'MANAGER'
       }
     }
   })

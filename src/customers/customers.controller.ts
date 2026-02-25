@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
-import { Roles } from '../common/roles.decorator';
+import { Roles } from '../common/decorators';
 
 @ApiTags('Customers')
 @ApiBearerAuth()
