@@ -4,16 +4,18 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
 
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy source code
-COPY . .
+# Copy prisma schema
+COPY prisma ./prisma/
 
 # Generate Prisma Client
 RUN npx prisma generate
+
+# Copy source code
+COPY . .
 
 # Build the application
 RUN npm run build
@@ -22,4 +24,4 @@ RUN npm run build
 EXPOSE 5000
 
 # Start the application
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main.js"]
