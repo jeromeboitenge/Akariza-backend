@@ -24,11 +24,13 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { TasksModule } from './tasks/tasks.module';
 import { MessagesModule } from './messages/messages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
+    EmailModule,
     OrganizationsModule,
     UsersModule,
     ProductsModule,
