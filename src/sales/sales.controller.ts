@@ -13,17 +13,18 @@ export class SalesController {
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ 
     summary: 'Create sale',
-    description: 'Customer is optional for cash sales. Customer is REQUIRED for credit/loan sales (paymentStatus: UNPAID or PARTIAL)'
+    description: 'Cashier workflow: 1) Select product, 2) Enter quantity, 3) Enter amount paid, 4) Select payment method (CASH/MOBILE)'
   })
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['items', 'paymentMethod'],
+      required: ['items', 'paymentMethod', 'amountPaid'],
       properties: {
         items: {
           type: 'array',
           items: {
             type: 'object',
+            required: ['productId', 'quantity', 'sellingPrice'],
             properties: {
               productId: { type: 'string', example: 'product-id' },
               quantity: { type: 'number', example: 2 },
@@ -34,46 +35,70 @@ export class SalesController {
         paymentMethod: { 
           type: 'string', 
           enum: ['CASH', 'MOBILE', 'CARD', 'BANK_TRANSFER'],
-          example: 'CASH' 
+          example: 'CASH',
+          description: 'CASH or MOBILE (momo)'
         },
-        paymentStatus: { 
-          type: 'string', 
-          enum: ['PAID', 'UNPAID', 'PARTIAL'],
-          example: 'PAID',
-          description: 'PAID = cash sale (no customer needed), UNPAID/PARTIAL = credit sale (customer required)'
+        amountPaid: { 
+          type: 'number', 
+          example: 50000,
+          description: 'Amount customer paid. System calculates change automatically'
+        },
+        discount: { 
+          type: 'number', 
+          example: 0, 
+          default: 0,
+          description: 'Optional discount amount'
         },
         customerId: { 
           type: 'string', 
           example: 'customer-id',
-          description: 'Required only for credit/loan sales (paymentStatus: UNPAID or PARTIAL)'
+          description: 'Required only if customer is buying on credit (amountPaid < total)'
         },
         customerName: { 
           type: 'string', 
           example: 'Walk-in Customer',
-          description: 'Optional. Defaults to "Walk-in Customer" if not provided'
-        },
-        discount: { type: 'number', example: 2000, default: 0 },
-        tax: { type: 'number', example: 0, default: 0 }
+          description: 'Optional. Auto-set to "Walk-in Customer"'
+        }
       },
       examples: {
         cashSale: {
-          summary: 'Cash Sale (No customer needed)',
+          summary: 'Cash Sale - Customer pays exact amount',
           value: {
             items: [
               { productId: 'product-id', quantity: 2, sellingPrice: 22000 }
             ],
             paymentMethod: 'CASH',
-            paymentStatus: 'PAID'
+            amountPaid: 44000
+          }
+        },
+        cashSaleWithChange: {
+          summary: 'Cash Sale - Customer pays more (with change)',
+          value: {
+            items: [
+              { productId: 'product-id', quantity: 2, sellingPrice: 22000 }
+            ],
+            paymentMethod: 'CASH',
+            amountPaid: 50000
+          }
+        },
+        momoSale: {
+          summary: 'Mobile Money Sale',
+          value: {
+            items: [
+              { productId: 'product-id', quantity: 2, sellingPrice: 22000 }
+            ],
+            paymentMethod: 'MOBILE',
+            amountPaid: 44000
           }
         },
         creditSale: {
-          summary: 'Credit/Loan Sale (Customer required)',
+          summary: 'Credit Sale - Customer pays less than total',
           value: {
             items: [
               { productId: 'product-id', quantity: 2, sellingPrice: 22000 }
             ],
             paymentMethod: 'CASH',
-            paymentStatus: 'UNPAID',
+            amountPaid: 20000,
             customerId: 'customer-id',
             customerName: 'John Doe'
           }

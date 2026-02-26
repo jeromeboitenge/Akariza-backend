@@ -182,6 +182,8 @@ model Sale {
   discount         Float    @default(0)
   tax              Float    @default(0)
   finalAmount      Float
+  amountPaid       Float    @default(0)
+  change           Float    @default(0)
   paymentMethod    String
   paymentStatus    String   @default("PAID")
   customerName     String?

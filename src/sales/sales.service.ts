@@ -53,6 +53,20 @@ export class SalesService {
       const discount = data.discount || 0;
       const tax = data.tax || 0;
       const finalAmount = totalAmount - discount + tax;
+      
+      // Calculate amount paid and change
+      const amountPaid = data.amountPaid || finalAmount;
+      const change = amountPaid > finalAmount ? amountPaid - finalAmount : 0;
+      
+      // Determine payment status
+      let calculatedPaymentStatus = paymentStatus;
+      if (amountPaid >= finalAmount) {
+        calculatedPaymentStatus = 'PAID';
+      } else if (amountPaid > 0 && amountPaid < finalAmount) {
+        calculatedPaymentStatus = 'PARTIAL';
+      } else {
+        calculatedPaymentStatus = 'UNPAID';
+      }
 
       const sale = await tx.sale.create({
         data: {
@@ -64,8 +78,10 @@ export class SalesService {
           discount,
           tax,
           finalAmount,
+          amountPaid,
+          change,
           paymentMethod: data.paymentMethod,
-          paymentStatus,
+          paymentStatus: calculatedPaymentStatus,
           customerName: data.customerName || 'Walk-in Customer',
           createdById: userId,
           syncedFromMobile: !!data.mobileRecordId,
