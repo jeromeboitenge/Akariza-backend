@@ -10,7 +10,7 @@ export class SalesController {
   constructor(private service: SalesService) {}
 
   @Post()
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Create sale' })
   @ApiBody({
     schema: {

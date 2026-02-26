@@ -6,12 +6,12 @@ import { Roles } from '../common/decorators';
 @ApiTags('Employees')
 @ApiBearerAuth()
 @Controller('employees')
-@Roles('BOSS', 'MANAGER')
+@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
 export class EmployeesController {
   constructor(private service: EmployeesService) {}
 
   @Post()
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Create employee' })
   @ApiBody({
     schema: {

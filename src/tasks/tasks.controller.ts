@@ -10,7 +10,7 @@ export class TasksController {
   constructor(private service: TasksService) {}
 
   @Post()
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Create task' })
   @ApiBody({
     schema: {

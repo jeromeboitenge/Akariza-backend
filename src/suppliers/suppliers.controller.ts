@@ -10,7 +10,7 @@ export class SuppliersController {
   constructor(private service: SuppliersService) {}
 
   @Post()
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Create supplier' })
   @ApiBody({
     schema: {

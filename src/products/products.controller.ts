@@ -11,7 +11,7 @@ export class ProductsController {
   constructor(private service: ProductsService) {}
 
   @Post()
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Create new product' })
   @ApiBody({ 
     type: CreateProductDto,

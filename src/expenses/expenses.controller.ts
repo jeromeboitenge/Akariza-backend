@@ -6,7 +6,7 @@ import { Roles } from '../common/decorators';
 @ApiTags('Expenses')
 @ApiBearerAuth()
 @Controller('expenses')
-@Roles('BOSS', 'MANAGER')
+@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
 export class ExpensesController {
   constructor(private service: ExpensesService) {}
 

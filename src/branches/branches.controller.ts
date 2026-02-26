@@ -6,12 +6,12 @@ import { Roles } from '../common/decorators';
 @ApiTags('Branches')
 @ApiBearerAuth()
 @Controller('branches')
-@Roles('BOSS', 'MANAGER')
+@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
 export class BranchesController {
   constructor(private service: BranchesService) {}
 
   @Post()
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Create branch' })
   @ApiBody({
     schema: {
