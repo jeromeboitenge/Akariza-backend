@@ -36,7 +36,13 @@ export class AuthService {
       const isValid = await this.comparePassword(password, user.password);
       if (!isValid) throw new UnauthorizedException('Invalid credentials');
 
-      const payload = { sub: user.id, organizationId: user.organizationId, role: user.role, type: 'user' };
+      const payload = { 
+        sub: user.id, 
+        organizationId: user.organizationId, 
+        branchId: user.branchId,
+        role: user.role, 
+        type: 'user' 
+      };
       const refreshToken = this.generateRefreshToken(payload);
 
       await this.prisma.user.update({
@@ -51,6 +57,7 @@ export class AuthService {
           fullName: user.fullName,
           role: user.role,
           organizationId: user.organizationId,
+          branchId: user.branchId,
         },
         accessToken: this.generateAccessToken(payload),
         refreshToken,

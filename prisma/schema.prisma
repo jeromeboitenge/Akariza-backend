@@ -275,6 +275,8 @@ model Branch {
   purchases         Purchase[]
   stockTransfers    StockTransfer[]     @relation("TransferFrom")
   receivedTransfers StockTransfer[]     @relation("TransferTo")
+  sentMessages      Message[]           @relation("SentFromBranch")
+  receivedMessages  Message[]           @relation("SentToBranch")
 
   @@unique([organizationId, code])
 }
@@ -596,16 +598,22 @@ model Message {
   id             String   @id @default(uuid())
   organizationId String
   senderId       String
+  senderBranchId String?
   receiverId     String?
+  receiverBranchId String?
+  targetType     String   @default("USER") // USER, BRANCH, ALL_BRANCHES
   message        String
   isRead         Boolean  @default(false)
   createdAt      DateTime @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
-  receiver     User?        @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  sender           User         @relation("SentMessages", fields: [senderId], references: [id])
+  receiver         User?        @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  senderBranch     Branch?      @relation("SentFromBranch", fields: [senderBranchId], references: [id])
+  receiverBranch   Branch?      @relation("SentToBranch", fields: [receiverBranchId], references: [id])
 
   @@index([organizationId, receiverId, isRead])
+  @@index([organizationId, receiverBranchId])
 }
 
 model Note {

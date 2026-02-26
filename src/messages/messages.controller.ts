@@ -9,23 +9,82 @@ export class MessagesController {
   constructor(private service: MessagesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Send message' })
+  @ApiOperation({ 
+    summary: 'Send message',
+    description: 'CASHIER: message within branch, MANAGER: message own branches, BOSS: message all branches'
+  })
   @ApiBody({
     schema: {
-      example: {
-        receiverId: 'user-id',
-        message: 'Hello, please check the inventory report'
+      type: 'object',
+      required: ['targetType', 'message'],
+      properties: {
+        targetType: {
+          type: 'string',
+          enum: ['USER', 'BRANCH', 'ALL_BRANCHES'],
+          description: 'USER = specific user, BRANCH = all users in branch, ALL_BRANCHES = all users in org (BOSS only)'
+        },
+        receiverId: {
+          type: 'string',
+          description: 'Required when targetType is USER'
+        },
+        receiverBranchId: {
+          type: 'string',
+          description: 'Required when targetType is BRANCH'
+        },
+        message: {
+          type: 'string',
+          example: 'Please check the inventory report'
+        }
+      },
+      examples: {
+        toUser: {
+          summary: 'Message to specific user (Cashier to Cashier)',
+          value: {
+            targetType: 'USER',
+            receiverId: 'user-id',
+            message: 'Can you help with customer at counter 2?'
+          }
+        },
+        toBranch: {
+          summary: 'Message to branch (Manager to their branch)',
+          value: {
+            targetType: 'BRANCH',
+            receiverBranchId: 'branch-id',
+            message: 'Team meeting at 3 PM today'
+          }
+        },
+        toAllBranches: {
+          summary: 'Message to all branches (BOSS only)',
+          value: {
+            targetType: 'ALL_BRANCHES',
+            message: 'New promotion starts tomorrow - 10% off all items'
+          }
+        }
       }
     }
   })
   create(@Body() data: any, @Request() req) {
-    return this.service.create(req.user.id, data.receiverId, data.message, req.user.organizationId);
+    return this.service.create(
+      data,
+      req.user.organizationId,
+      req.user.id,
+      req.user.role,
+      req.user.branchId
+    );
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all messages' })
+  @ApiOperation({ 
+    summary: 'Get messages',
+    description: 'CASHIER: own messages, MANAGER: branch messages, BOSS: all messages'
+  })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId, req.user.id);
+    return this.service.findAll(
+      req.user.organizationId,
+      req.user.id,
+      req.user.role,
+      req.user.branchId
+    );
   }
 
   @Get('conversation/:userId')
@@ -43,6 +102,6 @@ export class MessagesController {
   @Get('unread-count')
   @ApiOperation({ summary: 'Get unread message count' })
   getUnreadCount(@Request() req) {
-    return this.service.getUnreadCount(req.user.id);
+    return this.service.getUnreadCount(req.user.id, req.user.role, req.user.branchId);
   }
 }
