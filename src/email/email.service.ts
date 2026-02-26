@@ -75,6 +75,28 @@ export class EmailService {
     return this.sendEmail(to, subject, html);
   }
 
+  async sendOtpEmail(to: string, fullName: string, otpCode: string) {
+    const subject = 'Your Login OTP Code';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">🔐 Login Verification</h2>
+        <p>Hello <strong>${fullName}</strong>,</p>
+        <p>Your OTP code for login verification:</p>
+        
+        <div style="background-color: #eff6ff; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <p style="font-size: 36px; font-weight: bold; color: #2563eb; letter-spacing: 8px; margin: 0;">${otpCode}</p>
+        </div>
+        
+        <p style="color: #dc2626;"><strong>This code will expire in 5 minutes.</strong></p>
+        <p>If you didn't attempt to login, please contact your administrator immediately.</p>
+        
+        <p>Best regards,<br>Akariza Team</p>
+      </div>
+    `;
+
+    return this.sendEmail(to, subject, html);
+  }
+
   async sendLowStockAlert(to: string, productName: string, currentStock: number, minStock: number) {
     const subject = `Low Stock Alert: ${productName}`;
     const html = `

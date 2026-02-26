@@ -11,11 +11,26 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  @ApiOperation({ summary: 'Login (Admin, Boss, Manager, Cashier)' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiOperation({ 
+    summary: 'Login (Admin, Boss, Manager, Cashier)',
+    description: 'Step 1: Login with email and password. Users will receive OTP via email. Admins login directly without OTP.'
+  })
+  @ApiResponse({ status: 200, description: 'OTP sent to email (for users) or Login successful (for admin)' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
+  }
+
+  @Public()
+  @Post('verify-otp')
+  @ApiOperation({ 
+    summary: 'Verify OTP',
+    description: 'Step 2: Verify OTP code sent to email to complete login'
+  })
+  @ApiResponse({ status: 200, description: 'OTP verified, tokens returned' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
+  async verifyOtp(@Body() body: { userId: string; otpCode: string }) {
+    return this.authService.verifyOtp(body.userId, body.otpCode);
   }
 
   @Public()
