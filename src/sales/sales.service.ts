@@ -10,6 +10,14 @@ export class SalesService {
   ) {}
 
   async create(data: any, organizationId: string, userId: string) {
+    // Validate: Customer is required for credit/unpaid sales
+    const paymentStatus = data.paymentStatus || 'PAID';
+    if (paymentStatus === 'UNPAID' || paymentStatus === 'PARTIAL') {
+      if (!data.customerId) {
+        throw new Error('Customer is required for credit/loan sales');
+      }
+    }
+
     if (data.mobileRecordId) {
       const existing = await this.prisma.sale.findFirst({
         where: { organizationId, mobileRecordId: data.mobileRecordId },
@@ -42,17 +50,27 @@ export class SalesService {
         });
       }
 
+      const discount = data.discount || 0;
+      const tax = data.tax || 0;
+      const finalAmount = totalAmount - discount + tax;
+
       const sale = await tx.sale.create({
         data: {
           organizationId,
+          branchId: data.branchId,
+          customerId: data.customerId || null,
           saleNumber: `SALE-${Date.now()}`,
           totalAmount,
+          discount,
+          tax,
+          finalAmount,
           paymentMethod: data.paymentMethod,
-          customerName: data.customerName,
+          paymentStatus,
+          customerName: data.customerName || 'Walk-in Customer',
           createdById: userId,
           syncedFromMobile: !!data.mobileRecordId,
           mobileRecordId: data.mobileRecordId,
-        } as any,
+        },
         include: { items: true },
       });
 

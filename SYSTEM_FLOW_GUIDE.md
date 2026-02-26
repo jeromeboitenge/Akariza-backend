@@ -242,28 +242,13 @@ Akariza is a multi-organization retail management system with inventory, sales, 
 
 #### B. SALES FLOW (CASHIER, MANAGER, BOSS)
 
-**Step 12: Add Customer (Optional)**
-**Who**: CASHIER, MANAGER, BOSS  
-**Endpoint**: `POST /api/v1/customers`  
-**Action**: Register regular customer
-
-```json
-{
-  "name": "Alice Mukamana",
-  "phone": "+250788333333",
-  "email": "alice@email.com",
-  "customerType": "REGULAR"
-}
-```
-
-**Step 13: Create Sale**
+**Step 12: Create Sale (Cash Sale - No Customer Needed)**
 **Who**: CASHIER, MANAGER, BOSS  
 **Endpoint**: `POST /api/v1/sales`  
-**Action**: Process customer purchase
+**Action**: Process walk-in customer purchase
 
 ```json
 {
-  "customerId": "customer-id",
   "items": [
     {
       "productId": "product-id",
@@ -271,16 +256,57 @@ Akariza is a multi-organization retail management system with inventory, sales, 
       "sellingPrice": 22000
     }
   ],
-  "discount": 2000,
   "paymentMethod": "CASH",
-  "paymentStatus": "PAID"
+  "paymentStatus": "PAID",
+  "discount": 0
 }
 ```
 
 **Result**: 
 - Stock automatically decreases
 - Revenue recorded
-- Customer loyalty points updated (if applicable)
+- No customer record needed
+
+**Step 13: Create Credit/Loan Sale (Customer Required)**
+**Who**: CASHIER, MANAGER, BOSS  
+**Endpoint**: `POST /api/v1/sales`  
+**Action**: Process credit sale for registered customer
+
+**First, add customer if not exists:**
+```json
+POST /api/v1/customers
+{
+  "name": "Alice Mukamana",
+  "phone": "+250788333333",
+  "email": "alice@email.com",
+  "customerType": "REGULAR",
+  "creditLimit": 100000
+}
+```
+
+**Then create credit sale:**
+```json
+{
+  "customerId": "customer-id",
+  "customerName": "Alice Mukamana",
+  "items": [
+    {
+      "productId": "product-id",
+      "quantity": 2,
+      "sellingPrice": 22000
+    }
+  ],
+  "paymentMethod": "CASH",
+  "paymentStatus": "UNPAID",
+  "discount": 2000
+}
+```
+
+**Result**: 
+- Stock automatically decreases
+- Credit sale tracked under customer
+- Customer debt increases
+- Payment can be collected later
 
 ---
 
@@ -424,8 +450,10 @@ Akariza is a multi-organization retail management system with inventory, sales, 
 
 ### During Business Hours (Cashier)
 1. Login to system
-2. Process customer sales
-3. Add new customers as needed
+2. Process customer sales:
+   - **Cash sales**: No customer needed, just scan/select products
+   - **Credit sales**: Must select/add customer first
+3. Add new customers only for credit/loan sales
 4. Handle returns/exchanges (if applicable)
 5. Check product availability
 
@@ -478,10 +506,11 @@ Akariza is a multi-organization retail management system with inventory, sales, 
 - Consolidated organization reports
 
 ### Customer Management
-- Customer profiles
-- Purchase history
+- Customer registration **only required for credit/loan sales**
+- Cash sales don't need customer records
+- Purchase history tracked for registered customers
 - Loyalty points (if enabled)
-- Credit limits
+- Credit limits for loan customers
 
 ### Analytics
 - Sales trends

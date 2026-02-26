@@ -11,20 +11,73 @@ export class SalesController {
 
   @Post()
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
-  @ApiOperation({ summary: 'Create sale' })
+  @ApiOperation({ 
+    summary: 'Create sale',
+    description: 'Customer is optional for cash sales. Customer is REQUIRED for credit/loan sales (paymentStatus: UNPAID or PARTIAL)'
+  })
   @ApiBody({
     schema: {
-      example: {
-        items: [
-          {
-            productId: 'product-id',
-            quantity: 2,
-            sellingPrice: 22000
+      type: 'object',
+      required: ['items', 'paymentMethod'],
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              productId: { type: 'string', example: 'product-id' },
+              quantity: { type: 'number', example: 2 },
+              sellingPrice: { type: 'number', example: 22000 }
+            }
           }
-        ],
-        paymentMethod: 'CASH',
-        customerName: 'John Doe',
-        customerId: 'customer-id'
+        },
+        paymentMethod: { 
+          type: 'string', 
+          enum: ['CASH', 'MOBILE', 'CARD', 'BANK_TRANSFER'],
+          example: 'CASH' 
+        },
+        paymentStatus: { 
+          type: 'string', 
+          enum: ['PAID', 'UNPAID', 'PARTIAL'],
+          example: 'PAID',
+          description: 'PAID = cash sale (no customer needed), UNPAID/PARTIAL = credit sale (customer required)'
+        },
+        customerId: { 
+          type: 'string', 
+          example: 'customer-id',
+          description: 'Required only for credit/loan sales (paymentStatus: UNPAID or PARTIAL)'
+        },
+        customerName: { 
+          type: 'string', 
+          example: 'Walk-in Customer',
+          description: 'Optional. Defaults to "Walk-in Customer" if not provided'
+        },
+        discount: { type: 'number', example: 2000, default: 0 },
+        tax: { type: 'number', example: 0, default: 0 }
+      },
+      examples: {
+        cashSale: {
+          summary: 'Cash Sale (No customer needed)',
+          value: {
+            items: [
+              { productId: 'product-id', quantity: 2, sellingPrice: 22000 }
+            ],
+            paymentMethod: 'CASH',
+            paymentStatus: 'PAID'
+          }
+        },
+        creditSale: {
+          summary: 'Credit/Loan Sale (Customer required)',
+          value: {
+            items: [
+              { productId: 'product-id', quantity: 2, sellingPrice: 22000 }
+            ],
+            paymentMethod: 'CASH',
+            paymentStatus: 'UNPAID',
+            customerId: 'customer-id',
+            customerName: 'John Doe'
+          }
+        }
       }
     }
   })
