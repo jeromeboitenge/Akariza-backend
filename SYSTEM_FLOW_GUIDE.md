@@ -363,22 +363,56 @@ POST /api/v1/customers
 
 ---
 
-#### E. EXPENSE TRACKING (BOSS, MANAGER)
+#### E. EXPENSE TRACKING (CASHIER, MANAGER, BOSS)
 
-**Step 17: Record Expenses**
-**Who**: BOSS, MANAGER  
+**Step 17: Record Daily Expenses**
+**Who**: CASHIER, MANAGER, BOSS  
 **Endpoint**: `POST /api/v1/expenses`  
-**Action**: Track business expenses
+**Action**: Track daily business expenses
 
+**Common Cashier Expenses:**
 ```json
 {
-  "category": "RENT",
-  "amount": 200000,
-  "description": "Monthly rent",
-  "date": "2026-02-01",
+  "category": "TRANSPORT",
+  "amount": 5000,
+  "description": "Taxi to bank",
+  "date": "2026-02-26",
+  "paymentMethod": "CASH"
+}
+```
+
+**Other Expense Examples:**
+```json
+// Cleaning supplies
+{
+  "category": "SUPPLIES",
+  "amount": 15000,
+  "description": "Cleaning materials",
+  "date": "2026-02-26",
+  "paymentMethod": "CASH"
+}
+
+// Utilities (Manager/Boss)
+{
+  "category": "UTILITIES",
+  "amount": 150000,
+  "description": "Electricity bill",
+  "date": "2026-02-24",
   "paymentMethod": "BANK_TRANSFER"
 }
 ```
+
+**Expense Categories:**
+- TRANSPORT - Taxi, fuel, delivery
+- SUPPLIES - Cleaning, stationery, packaging
+- UTILITIES - Electricity, water, internet
+- MAINTENANCE - Repairs, equipment servicing
+- RENT - Store/office rent
+- SALARIES - Employee payments
+- MARKETING - Advertising, promotions
+- INSURANCE - Business insurance
+- TAXES - Government taxes
+- OTHER - Miscellaneous expenses
 
 ---
 
@@ -453,9 +487,10 @@ POST /api/v1/customers
 2. Process customer sales:
    - **Cash sales**: No customer needed, just scan/select products
    - **Credit sales**: Must select/add customer first
-3. Add new customers only for credit/loan sales
-4. Handle returns/exchanges (if applicable)
-5. Check product availability
+3. Record daily expenses (transport, supplies, etc.)
+4. Add new customers only for credit/loan sales
+5. Handle returns/exchanges (if applicable)
+6. Check product availability
 
 ### During Business Hours (Manager)
 1. Monitor sales in real-time

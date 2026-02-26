@@ -6,21 +6,96 @@ import { Roles } from '../common/decorators';
 @ApiTags('Expenses')
 @ApiBearerAuth()
 @Controller('expenses')
-@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
 export class ExpensesController {
   constructor(private service: ExpensesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create expense' })
+  @ApiOperation({ 
+    summary: 'Record daily expense',
+    description: 'Cashier records daily expenses like transport, cleaning supplies, etc.'
+  })
   @ApiBody({
     schema: {
-      example: {
-        category: 'UTILITIES',
-        amount: 150000,
-        description: 'Electricity bill - February',
-        date: '2026-02-24',
-        paymentMethod: 'BANK_TRANSFER',
-        reference: 'INV-2024-02'
+      type: 'object',
+      required: ['category', 'amount', 'description', 'date'],
+      properties: {
+        category: {
+          type: 'string',
+          enum: [
+            'RENT',
+            'UTILITIES',
+            'SALARIES',
+            'TRANSPORT',
+            'SUPPLIES',
+            'MAINTENANCE',
+            'MARKETING',
+            'INSURANCE',
+            'TAXES',
+            'OTHER'
+          ],
+          example: 'TRANSPORT',
+          description: 'Expense category'
+        },
+        amount: {
+          type: 'number',
+          example: 5000,
+          description: 'Amount spent'
+        },
+        description: {
+          type: 'string',
+          example: 'Taxi to bank',
+          description: 'What the money was spent on'
+        },
+        date: {
+          type: 'string',
+          format: 'date',
+          example: '2026-02-26',
+          description: 'Date of expense'
+        },
+        paymentMethod: {
+          type: 'string',
+          enum: ['CASH', 'MOBILE', 'BANK_TRANSFER', 'CARD'],
+          example: 'CASH',
+          description: 'How payment was made'
+        },
+        receiptUrl: {
+          type: 'string',
+          example: 'https://example.com/receipt.jpg',
+          description: 'Optional receipt photo URL'
+        }
+      },
+      examples: {
+        transport: {
+          summary: 'Transport Expense',
+          value: {
+            category: 'TRANSPORT',
+            amount: 5000,
+            description: 'Taxi to bank',
+            date: '2026-02-26',
+            paymentMethod: 'CASH'
+          }
+        },
+        supplies: {
+          summary: 'Cleaning Supplies',
+          value: {
+            category: 'SUPPLIES',
+            amount: 15000,
+            description: 'Cleaning materials',
+            date: '2026-02-26',
+            paymentMethod: 'CASH'
+          }
+        },
+        utilities: {
+          summary: 'Electricity Bill',
+          value: {
+            category: 'UTILITIES',
+            amount: 150000,
+            description: 'Electricity bill - February',
+            date: '2026-02-24',
+            paymentMethod: 'BANK_TRANSFER'
+          }
+        }
       }
     }
   })
