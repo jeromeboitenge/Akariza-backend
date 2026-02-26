@@ -111,7 +111,7 @@ export class SalesController {
   }
 
   @Get()
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get all sales' })
   findAll(@Request() req) {
     return this.service.findAll(req.user.organizationId);

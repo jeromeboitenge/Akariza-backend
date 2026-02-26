@@ -51,7 +51,7 @@ export class PurchaseOrdersController {
   }
 
   @Post(':id/approve')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Approve purchase order' })
   approve(@Param('id') id: string, @Request() req) {
     return this.service.approve(id, req.user.id);

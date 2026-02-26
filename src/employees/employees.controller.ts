@@ -42,7 +42,7 @@ export class EmployeesController {
   }
 
   @Patch(':id')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Update employee' })
   update(@Param('id') id: string, @Body() data: any) {
     return this.service.update(id, data);
@@ -64,7 +64,7 @@ export class EmployeesController {
   }
 
   @Post(':id/targets')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Set sales target' })
   @ApiBody({
     schema: {

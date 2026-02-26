@@ -53,7 +53,7 @@ export class TasksController {
   }
 
   @Delete(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Delete task' })
   delete(@Param('id') id: string) {
     return this.service.delete(id);

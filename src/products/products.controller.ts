@@ -66,13 +66,13 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   deactivate(@Param('id') id: string) {
     return this.service.deactivate(id);
   }

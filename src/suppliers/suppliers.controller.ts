@@ -29,28 +29,28 @@ export class SuppliersController {
   }
 
   @Get()
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get all suppliers' })
   findAll(@Request() req) {
     return this.service.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get supplier by ID' })
   findOne(@Param('id') id: string, @Request() req) {
     return this.service.findOne(id, req.user.organizationId);
   }
 
   @Patch(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Update supplier' })
   update(@Param('id') id: string, @Body() data: any) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Deactivate supplier' })
   deactivate(@Param('id') id: string) {
     return this.service.deactivate(id);

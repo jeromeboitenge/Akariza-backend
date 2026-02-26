@@ -28,35 +28,35 @@ export class CustomersController {
   }
 
   @Get()
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get all customers' })
   findAll(@Request() req) {
     return this.service.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get customer by ID' })
   findOne(@Param('id') id: string, @Request() req) {
     return this.service.findOne(id, req.user.organizationId);
   }
 
   @Patch(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Update customer' })
   update(@Param('id') id: string, @Body() data: any) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Deactivate customer' })
   deactivate(@Param('id') id: string) {
     return this.service.deactivate(id);
   }
 
   @Post(':id/loyalty/add')
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Add loyalty points' })
   @ApiBody({
     schema: {
@@ -68,7 +68,7 @@ export class CustomersController {
   }
 
   @Post(':id/loyalty/redeem')
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Redeem loyalty points' })
   @ApiBody({
     schema: {
@@ -80,7 +80,7 @@ export class CustomersController {
   }
 
   @Post(':id/transactions')
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Add customer transaction' })
   @ApiBody({
     schema: {

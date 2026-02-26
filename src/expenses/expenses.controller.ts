@@ -155,7 +155,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Delete expense' })
   delete(@Param('id') id: string) {
     return this.service.delete(id);

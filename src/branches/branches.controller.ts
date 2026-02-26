@@ -41,14 +41,14 @@ export class BranchesController {
   }
 
   @Patch(':id')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Update branch' })
   update(@Param('id') id: string, @Body() data: any) {
     return this.service.update(id, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Deactivate branch' })
   deactivate(@Param('id') id: string) {
     return this.service.deactivate(id);
@@ -78,7 +78,7 @@ export class BranchesController {
   }
 
   @Post('transfer/:id/approve')
-  @Roles('BOSS')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Approve stock transfer' })
   approveTransfer(@Param('id') id: string, @Request() req) {
     return this.service.approveTransfer(id, req.user.id);
