@@ -5,10 +5,74 @@ import { PrismaService } from '../common/prisma.service';
 export class ExpensesService {
   constructor(private prisma: PrismaService) {}
 
-  create(data: any, organizationId: string, userId: string) {
+  async create(data: any, organizationId: string, userId: string) {
+    // If category is "OTHER" and customCategory is provided, save it
+    let category = data.category;
+    
+    if (data.category === 'OTHER' && data.customCategory) {
+      const customCategoryName = data.customCategory.toUpperCase().trim();
+      
+      // Check if custom category already exists
+      let existingCategory = await this.prisma.expenseCategory.findUnique({
+        where: {
+          organizationId_name: {
+            organizationId,
+            name: customCategoryName
+          }
+        }
+      });
+      
+      // If not, create it
+      if (!existingCategory) {
+        existingCategory = await this.prisma.expenseCategory.create({
+          data: {
+            organizationId,
+            name: customCategoryName,
+            isDefault: false
+          }
+        });
+      }
+      
+      category = customCategoryName;
+    }
+    
     return this.prisma.expense.create({
-      data: { ...data, organizationId, createdById: userId, date: new Date(data.date) },
+      data: { 
+        ...data, 
+        category,
+        organizationId, 
+        createdById: userId, 
+        date: new Date(data.date) 
+      },
     });
+  }
+
+  async getCategories(organizationId: string) {
+    // Get default categories
+    const defaultCategories = [
+      'RENT',
+      'UTILITIES',
+      'SALARIES',
+      'TRANSPORT',
+      'SUPPLIES',
+      'MAINTENANCE',
+      'MARKETING',
+      'INSURANCE',
+      'TAXES',
+      'OTHER'
+    ];
+    
+    // Get custom categories for this organization
+    const customCategories = await this.prisma.expenseCategory.findMany({
+      where: { organizationId },
+      orderBy: { name: 'asc' }
+    });
+    
+    return {
+      default: defaultCategories,
+      custom: customCategories.map(c => c.name),
+      all: [...defaultCategories, ...customCategories.map(c => c.name)]
+    };
   }
 
   findAll(organizationId: string, startDate?: Date, endDate?: Date) {

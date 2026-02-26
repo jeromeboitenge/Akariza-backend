@@ -63,6 +63,11 @@ export class ExpensesController {
           type: 'string',
           example: 'https://example.com/receipt.jpg',
           description: 'Optional receipt photo URL'
+        },
+        customCategory: {
+          type: 'string',
+          example: 'SECURITY',
+          description: 'Required when category is OTHER. Will be saved for future use.'
         }
       },
       examples: {
@@ -86,6 +91,17 @@ export class ExpensesController {
             paymentMethod: 'CASH'
           }
         },
+        customCategory: {
+          summary: 'Custom Category (e.g., Security)',
+          value: {
+            category: 'OTHER',
+            customCategory: 'SECURITY',
+            amount: 50000,
+            description: 'Security guard payment',
+            date: '2026-02-26',
+            paymentMethod: 'CASH'
+          }
+        },
         utilities: {
           summary: 'Electricity Bill',
           value: {
@@ -101,6 +117,15 @@ export class ExpensesController {
   })
   create(@Body() data: any, @Request() req) {
     return this.service.create(data, req.user.organizationId, req.user.id);
+  }
+
+  @Get('categories')
+  @ApiOperation({ 
+    summary: 'Get all expense categories',
+    description: 'Returns default categories + custom categories added by users'
+  })
+  getCategories(@Request() req) {
+    return this.service.getCategories(req.user.organizationId);
   }
 
   @Get()
