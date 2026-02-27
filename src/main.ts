@@ -67,15 +67,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  
-  // Only enable Swagger in development
-  if (process.env.NODE_ENV !== 'production') {
-    SwaggerModule.setup('api', app, document, {
-      customSiteTitle: 'Akariza API Documentation',
-      customfavIcon: 'https://nestjs.com/img/logo-small.svg',
-      customCss: '.swagger-ui .topbar { display: none }',
-    });
-  }
+  SwaggerModule.setup('api', app, document, {
+    customSiteTitle: 'Akariza API Documentation',
+    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+    customCss: '.swagger-ui .topbar { display: none }',
+  });
 
   const port = process.env.PORT || 5000;
   await app.listen(port, '0.0.0.0');
