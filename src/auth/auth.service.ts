@@ -337,4 +337,142 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
+
+  async forgotPassword(email: string) {
+    // Try user first
+    let user: any = await this.prisma.user.findFirst({ where: { email } });
+    let userType = 'user';
+    
+    // If not found, try admin
+    if (!user) {
+      user = await this.prisma.admin.findUnique({ where: { email } });
+      userType = 'admin';
+    }
+    
+    if (!user) {
+      // Don't reveal if email exists
+      return { message: 'If email exists, OTP has been sent' };
+    }
+
+    // Generate OTP
+    const otpCode = this.generateOtp();
+    const otpExpiry = DateUtil.addMinutes(new Date(), SECURITY.OTP_EXPIRY_MINUTES);
+
+    // Save OTP
+    if (userType === 'admin') {
+      await this.prisma.admin.update({
+        where: { id: user.id },
+        data: { otpCode, otpExpiry },
+      });
+    } else {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { otpCode, otpExpiry },
+      });
+    }
+
+    // Log OTP in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Password Reset OTP for', email, ':', otpCode);
+    }
+
+    // Send OTP email
+    try {
+      await this.emailService.sendPasswordResetEmail(email, user.fullName, otpCode);
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+    }
+
+    return { message: 'If email exists, OTP has been sent' };
+  }
+
+  async verifyPasswordResetOtp(email: string, otpCode: string) {
+    // Try user first
+    let user: any = await this.prisma.user.findFirst({ where: { email } });
+    let userType = 'user';
+    
+    // If not found, try admin
+    if (!user) {
+      user = await this.prisma.admin.findUnique({ where: { email } });
+      userType = 'admin';
+    }
+    
+    if (!user) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    if (!user.otpCode || !user.otpExpiry) {
+      throw new UnauthorizedException('No OTP found. Please request password reset again.');
+    }
+
+    if (new Date() > user.otpExpiry) {
+      throw new UnauthorizedException('OTP expired. Please request password reset again.');
+    }
+
+    if (user.otpCode !== otpCode) {
+      throw new UnauthorizedException('Invalid OTP code');
+    }
+
+    // OTP is valid, return success
+    return { 
+      message: 'OTP verified. You can now reset your password.',
+      email,
+      verified: true
+    };
+  }
+
+  async resetPassword(email: string, otpCode: string, newPassword: string) {
+    // Verify OTP first
+    await this.verifyPasswordResetOtp(email, otpCode);
+
+    // Validate password strength
+    const validation = this.validatePasswordStrength(newPassword);
+    if (!validation.valid) {
+      throw new UnauthorizedException(validation.message);
+    }
+
+    // Try user first
+    let user: any = await this.prisma.user.findFirst({ where: { email } });
+    let userType = 'user';
+    
+    // If not found, try admin
+    if (!user) {
+      user = await this.prisma.admin.findUnique({ where: { email } });
+      userType = 'admin';
+    }
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Hash new password
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    // Update password and clear OTP
+    if (userType === 'admin') {
+      await this.prisma.admin.update({
+        where: { id: user.id },
+        data: { 
+          password: hashedPassword,
+          otpCode: null,
+          otpExpiry: null,
+          failedLoginAttempts: 0,
+          lockedUntil: null
+        },
+      });
+    } else {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          password: hashedPassword,
+          otpCode: null,
+          otpExpiry: null,
+          failedLoginAttempts: 0,
+          lockedUntil: null
+        },
+      });
+    }
+
+    return { message: 'Password reset successfully. You can now login.' };
+  }
 }
