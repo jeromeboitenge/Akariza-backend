@@ -2,23 +2,31 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { EnvironmentValidator } from './common/environment.validator';
 
 async function bootstrap() {
+  // Validate environment variables
+  EnvironmentValidator.validate();
+  
   const app = await NestFactory.create(AppModule);
   
+  // CORS - restrict in production
   app.enableCors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? false : '*'),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
   
   app.setGlobalPrefix('api/v1');
+  
+  // Validation with security
   app.useGlobalPipes(new ValidationPipe({ 
     whitelist: true, 
     transform: true,
     forbidNonWhitelisted: true,
+    disableErrorMessages: process.env.NODE_ENV === 'production',
   }));
-  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Swagger Configuration
   const config = new DocumentBuilder()
@@ -59,11 +67,15 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1/docs', app, document, {
-    customSiteTitle: 'Akariza API Documentation',
-    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
-    customCss: '.swagger-ui .topbar { display: none }',
-  });
+  
+  // Only enable Swagger in development
+  if (process.env.NODE_ENV !== 'production') {
+    SwaggerModule.setup('api', app, document, {
+      customSiteTitle: 'Akariza API Documentation',
+      customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+      customCss: '.swagger-ui .topbar { display: none }',
+    });
+  }
 
   const port = process.env.PORT || 5000;
   await app.listen(port, '0.0.0.0');
