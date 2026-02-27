@@ -1,5 +1,5 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators';
@@ -11,13 +11,56 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @ApiOperation({ 
-    summary: 'Login (Admin, Boss, Manager, Cashier)',
-    description: 'Step 1: Login with email and password. Users will receive OTP via email. Admins login directly without OTP. Rate limited to 5 attempts per minute.'
+    summary: 'Step 1: Login with Email & Password',
+    description: `
+**Login Flow:**
+1. Send email and password
+2. System sends OTP to your email (check spam folder)
+3. Use the OTP in the verify-otp endpoint
+
+**Request Body:**
+\`\`\`json
+{
+  "email": "jeromeboitenge@gmail.com",
+  "password": "Password12!"
+}
+\`\`\`
+
+**Response:**
+\`\`\`json
+{
+  "message": "OTP sent to your email",
+  "requiresOtp": true,
+  "userId": "f2707400-d110-4963-9aa3-3fe5f171c756",
+  "userType": "admin"
+}
+\`\`\`
+
+**Next Step:** Check your email for OTP code, then call /auth/verify-otp
+    `
   })
-  @ApiResponse({ status: 200, description: 'OTP sent to email (for users) or Login successful (for admin)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email', 'password'],
+      properties: {
+        email: { 
+          type: 'string', 
+          example: 'jeromeboitenge@gmail.com',
+          description: 'Your email address'
+        },
+        password: { 
+          type: 'string', 
+          example: 'Password12!',
+          description: 'Your password'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'OTP sent to email' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 429, description: 'Too many requests' })
   async login(@Body() loginDto: LoginDto) {
@@ -25,11 +68,67 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 attempts per minute
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('verify-otp')
   @ApiOperation({ 
-    summary: 'Verify OTP',
-    description: 'Step 2: Verify OTP code sent to email to complete login. Rate limited to 3 attempts per minute.'
+    summary: 'Step 2: Verify OTP Code',
+    description: `
+**After receiving OTP via email, verify it here to complete login.**
+
+**Request Body:**
+\`\`\`json
+{
+  "userId": "f2707400-d110-4963-9aa3-3fe5f171c756",
+  "otpCode": "123456",
+  "userType": "admin"
+}
+\`\`\`
+
+**Where to get these values:**
+- \`userId\`: From the login response
+- \`otpCode\`: 6-digit code sent to your email (check spam folder)
+- \`userType\`: From the login response ("admin" or "user")
+
+**Success Response:**
+\`\`\`json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "f2707400-d110-4963-9aa3-3fe5f171c756",
+    "email": "jeromeboitenge@gmail.com",
+    "fullName": "Jerome Boitenge",
+    "role": "SYSTEM_ADMIN"
+  }
+}
+\`\`\`
+
+**Use the accessToken in Authorization header:** \`Bearer <accessToken>\`
+    `
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['userId', 'otpCode'],
+      properties: {
+        userId: { 
+          type: 'string', 
+          example: 'f2707400-d110-4963-9aa3-3fe5f171c756',
+          description: 'User ID from login response'
+        },
+        otpCode: { 
+          type: 'string', 
+          example: '123456',
+          description: '6-digit OTP code from email'
+        },
+        userType: { 
+          type: 'string', 
+          example: 'admin',
+          enum: ['admin', 'user'],
+          description: 'User type from login response (default: "user")'
+        }
+      }
+    }
   })
   @ApiResponse({ status: 200, description: 'OTP verified, tokens returned' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
@@ -40,7 +139,40 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({ 
+    summary: 'Refresh Access Token',
+    description: `
+**When your access token expires (after 15 minutes), use this to get a new one.**
+
+**Request Body:**
+\`\`\`json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+\`\`\`
+
+**Response:**
+\`\`\`json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+\`\`\`
+    `
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['refreshToken'],
+      properties: {
+        refreshToken: { 
+          type: 'string', 
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'Refresh token from login/verify-otp response'
+        }
+      }
+    }
+  })
   @ApiResponse({ status: 200, description: 'Token refreshed' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refresh(@Body() refreshDto: RefreshTokenDto) {
