@@ -222,13 +222,15 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  async verifyOtp(email: string, otpCode: string, userType: string = 'user') {
-    let user: any;
+  async verifyOtp(email: string, otpCode: string) {
+    // Try user first
+    let user: any = await this.prisma.user.findFirst({ where: { email } });
+    let userType = 'user';
     
-    if (userType === 'admin') {
+    // If not found, try admin
+    if (!user) {
       user = await this.prisma.admin.findUnique({ where: { email } });
-    } else {
-      user = await this.prisma.user.findFirst({ where: { email } });
+      userType = 'admin';
     }
     
     if (!user) {

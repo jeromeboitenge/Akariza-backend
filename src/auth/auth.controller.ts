@@ -40,15 +40,14 @@ export class AuthController {
       required: ['email', 'otpCode'],
       properties: {
         email: { type: 'string', example: 'jeromeboitenge@gmail.com' },
-        otpCode: { type: 'string', example: '123456' },
-        userType: { type: 'string', example: 'admin', enum: ['admin', 'user'] }
+        otpCode: { type: 'string', example: '123456' }
       }
     }
   })
   @ApiResponse({ status: 200, description: 'Returns access and refresh tokens' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
-  async verifyOtp(@Body() body: { email: string; otpCode: string; userType?: string }) {
-    return this.authService.verifyOtp(body.email, body.otpCode, body.userType || 'user');
+  async verifyOtp(@Body() body: { email: string; otpCode: string }) {
+    return this.authService.verifyOtp(body.email, body.otpCode);
   }
 
   @Public()
