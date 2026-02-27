@@ -54,4 +54,11 @@ export class AuthController {
   async logout() {
     return { message: 'Logged out successfully' };
   }
+
+  @Public()
+  @Post('test-email')
+  @ApiOperation({ summary: 'Test email service (development only)' })
+  async testEmail(@Body() body: { email: string }) {
+    return this.authService.testEmailService(body.email);
+  }
 }

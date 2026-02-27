@@ -43,6 +43,37 @@ export class AuthService {
     return ValidationUtil.isStrongPassword(password);
   }
 
+  async testEmailService(email: string) {
+    try {
+      console.log('🧪 Testing email service for:', email);
+      console.log('📧 SendGrid API Key:', process.env.SENDGRID_API_KEY ? 'Set ✅' : 'Missing ❌');
+      console.log('📧 From Email:', process.env.SENDGRID_FROM_EMAIL || 'Missing ❌');
+      
+      const testOtp = this.generateOtp();
+      const result = await this.emailService.sendOtpEmail(email, 'Test User', testOtp);
+      
+      return {
+        success: result.success,
+        message: result.message,
+        testOtp: process.env.NODE_ENV === 'development' ? testOtp : 'Hidden in production',
+        config: {
+          apiKeySet: !!process.env.SENDGRID_API_KEY,
+          fromEmail: process.env.SENDGRID_FROM_EMAIL,
+        }
+      };
+    } catch (error) {
+      console.error('❌ Test email error:', error);
+      return {
+        success: false,
+        error: error.message,
+        config: {
+          apiKeySet: !!process.env.SENDGRID_API_KEY,
+          fromEmail: process.env.SENDGRID_FROM_EMAIL,
+        }
+      };
+    }
+  }
+
   async login(email: string, password: string) {
     // Try user login first
     const user = await this.prisma.user.findFirst({ where: { email, isActive: true } });
