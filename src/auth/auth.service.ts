@@ -119,25 +119,82 @@ export class AuthService {
       };
     }
 
-    // Try admin login (no OTP for admin)
+    // Try admin login - also requires OTP
     const admin = await this.prisma.admin.findUnique({ where: { email } });
     if (admin && admin.isActive) {
-      const isValid = await this.comparePassword(password, admin.password);
-      if (!isValid) throw new UnauthorizedException('Invalid credentials');
+      // Check if account is locked
+      if (admin.lockedUntil && new Date() < admin.lockedUntil) {
+        const minutesLeft = Math.ceil((admin.lockedUntil.getTime() - Date.now()) / 60000);
+        throw new UnauthorizedException(`Account locked. Try again in ${minutesLeft} minutes.`);
+      }
 
-      const payload = { sub: admin.id, role: admin.role, type: 'admin' };
+      const isValid = await this.comparePassword(password, admin.password);
+      
+      if (!isValid) {
+        // Increment failed attempts
+        const failedAttempts = admin.failedLoginAttempts + 1;
+        const updateData: any = { failedLoginAttempts: failedAttempts };
+
+        // Lock account after 5 failed attempts for 30 minutes
+        if (failedAttempts >= 5) {
+          updateData.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+          await this.prisma.admin.update({
+            where: { id: admin.id },
+            data: updateData,
+          });
+          throw new UnauthorizedException('Account locked due to multiple failed login attempts. Try again in 30 minutes.');
+        }
+
+        await this.prisma.admin.update({
+          where: { id: admin.id },
+          data: updateData,
+        });
+
+        throw new UnauthorizedException(`Invalid credentials. ${5 - failedAttempts} attempts remaining.`);
+      }
+
+      // Reset failed attempts on successful login
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+
+      // Generate OTP for admin too
+      const otpCode = this.generateOtp();
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: { otpCode, otpExpiry },
+      });
+
+      // Send OTP email
+      try {
+        await this.emailService.sendOtpEmail(admin.email, admin.fullName, otpCode);
+      } catch (error) {
+        console.error('Failed to send OTP email:', error);
+        throw new UnauthorizedException('Failed to send OTP. Please try again.');
+      }
+
       return {
-        user: { id: admin.id, email: admin.email, fullName: admin.fullName, role: admin.role },
-        accessToken: this.generateAccessToken(payload),
-        refreshToken: this.generateRefreshToken(payload),
+        message: 'OTP sent to your email',
+        requiresOtp: true,
+        userId: admin.id,
+        userType: 'admin',
       };
     }
 
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  async verifyOtp(userId: string, otpCode: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  async verifyOtp(userId: string, otpCode: string, userType: string = 'user') {
+    let user: any;
+    
+    if (userType === 'admin') {
+      user = await this.prisma.admin.findUnique({ where: { id: userId } });
+    } else {
+      user = await this.prisma.user.findUnique({ where: { id: userId } });
+    }
     
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -156,31 +213,68 @@ export class AuthService {
     }
 
     // OTP is valid, generate tokens
-    const payload = { 
-      sub: user.id, 
-      organizationId: user.organizationId, 
-      branchId: user.branchId,
-      role: user.role, 
-      type: 'user' 
-    };
-    const refreshToken = this.generateRefreshToken(payload);
+    let payload: any;
+    let userData: any;
 
-    // Clear OTP and save refresh token
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { 
-        otpCode: null, 
-        otpExpiry: null,
-        refreshToken 
-      },
-    });
+    if (userType === 'admin') {
+      payload = { 
+        sub: user.id, 
+        role: user.role, 
+        type: 'admin' 
+      };
+      
+      // Clear OTP for admin
+      await this.prisma.admin.update({
+        where: { id: user.id },
+        data: { 
+          otpCode: null, 
+          otpExpiry: null,
+        },
+      });
 
-    return {
-      user: {
+      userData = {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+      };
+    } else {
+      payload = { 
+        sub: user.id, 
+        organizationId: user.organizationId, 
+        branchId: user.branchId,
+        role: user.role, 
+        type: 'user' 
+      };
+      
+      const refreshToken = this.generateRefreshToken(payload);
+
+      // Clear OTP and save refresh token for user
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          otpCode: null, 
+          otpExpiry: null,
+          refreshToken 
+        },
+      });
+
+      userData = {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        organizationId: user.organizationId,
+        branchId: user.branchId,
+      };
+    }
+
+    return {
+      user: userData,
+      accessToken: this.generateAccessToken(payload),
+      refreshToken: this.generateRefreshToken(payload),
+    };
+  }
         organizationId: user.organizationId,
         branchId: user.branchId,
       },

@@ -34,8 +34,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'OTP verified, tokens returned' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
   @ApiResponse({ status: 429, description: 'Too many requests' })
-  async verifyOtp(@Body() body: { userId: string; otpCode: string }) {
-    return this.authService.verifyOtp(body.userId, body.otpCode);
+  async verifyOtp(@Body() body: { userId: string; otpCode: string; userType?: string }) {
+    return this.authService.verifyOtp(body.userId, body.otpCode, body.userType || 'user');
   }
 
   @Public()

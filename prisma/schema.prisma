@@ -8,14 +8,18 @@ datasource db {
 }
 
 model Admin {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  fullName  String
-  role      String   @default("SYSTEM_ADMIN")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  password            String
+  fullName            String
+  role                String    @default("SYSTEM_ADMIN")
+  isActive            Boolean   @default(true)
+  otpCode             String?
+  otpExpiry           DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   organizations Organization[]
 }
