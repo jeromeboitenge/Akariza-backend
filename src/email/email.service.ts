@@ -8,6 +8,7 @@ export class EmailService {
   }
 
   async sendEmail(to: string, subject: string, html: string) {
+    const startTime = Date.now();
     const msg = {
       to,
       from: {
@@ -19,14 +20,18 @@ export class EmailService {
     };
 
     try {
+      console.log(`📧 Sending email to: ${to} | Subject: ${subject}`);
       const result = await sgMail.send(msg);
-      console.log('✅ Email sent successfully to:', to);
-      console.log('SendGrid Response:', result[0].statusCode);
+      const duration = Date.now() - startTime;
+      console.log(`✅ Email sent in ${duration}ms | Status: ${result[0].statusCode} | To: ${to}`);
       return { success: true, message: 'Email sent successfully' };
     } catch (error) {
-      console.error('❌ SendGrid Error Details:');
+      const duration = Date.now() - startTime;
+      console.error(`❌ Email failed after ${duration}ms`);
       console.error('To:', to);
+      console.error('Subject:', subject);
       console.error('From:', process.env.SENDGRID_FROM_EMAIL);
+      console.error('API Key Set:', !!process.env.SENDGRID_API_KEY);
       console.error('Error:', error.response?.body || error.message);
       
       // Don't throw error - return failure but allow login to continue

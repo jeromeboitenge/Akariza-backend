@@ -68,6 +68,25 @@ export class AuthController {
     return this.authService.refreshToken(refreshDto.refreshToken);
   }
 
+  @Public()
+  @Post('test-otp-email')
+  @ApiOperation({ summary: 'Test OTP email delivery (dev only)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email'],
+      properties: {
+        email: { type: 'string', example: 'jeromeboitenge@gmail.com' }
+      }
+    }
+  })
+  async testOtpEmail(@Body() body: { email: string }) {
+    const startTime = Date.now();
+    const result = await this.authService.testEmailService(body.email);
+    const duration = Date.now() - startTime;
+    return { ...result, totalTime: `${duration}ms` };
+  }
+
   @Post('logout')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Logout user' })
