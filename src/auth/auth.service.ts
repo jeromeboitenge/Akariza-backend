@@ -2,6 +2,10 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../common/prisma.service';
 import { EmailService } from '../email/email.service';
+import { ValidationUtil } from '../common/validation.util';
+import { NumberUtil } from '../common/number.util';
+import { DateUtil } from '../common/date.util';
+import { SECURITY } from '../common/constants';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -27,31 +31,16 @@ export class AuthService {
   generateRefreshToken(payload: any): string {
     return this.jwtService.sign(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || SECURITY.JWT_REFRESH_EXPIRY,
     });
   }
 
   generateOtp(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return NumberUtil.generateOTP(6);
   }
 
   validatePasswordStrength(password: string): { valid: boolean; message?: string } {
-    if (password.length < 8) {
-      return { valid: false, message: 'Password must be at least 8 characters long' };
-    }
-    if (!/[A-Z]/.test(password)) {
-      return { valid: false, message: 'Password must contain at least one uppercase letter' };
-    }
-    if (!/[a-z]/.test(password)) {
-      return { valid: false, message: 'Password must contain at least one lowercase letter' };
-    }
-    if (!/[0-9]/.test(password)) {
-      return { valid: false, message: 'Password must contain at least one number' };
-    }
-    if (!/[!@#$%^&*]/.test(password)) {
-      return { valid: false, message: 'Password must contain at least one special character (!@#$%^&*)' };
-    }
-    return { valid: true };
+    return ValidationUtil.isStrongPassword(password);
   }
 
   async login(email: string, password: string) {
@@ -97,7 +86,7 @@ export class AuthService {
 
       // Generate OTP
       const otpCode = this.generateOtp();
-      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const otpExpiry = DateUtil.addMinutes(new Date(), SECURITY.OTP_EXPIRY_MINUTES);
 
       await this.prisma.user.update({
         where: { id: user.id },
@@ -161,7 +150,7 @@ export class AuthService {
 
       // Generate OTP for admin too
       const otpCode = this.generateOtp();
-      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const otpExpiry = DateUtil.addMinutes(new Date(), SECURITY.OTP_EXPIRY_MINUTES);
 
       await this.prisma.admin.update({
         where: { id: admin.id },
