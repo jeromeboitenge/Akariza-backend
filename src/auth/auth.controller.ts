@@ -37,9 +37,9 @@ export class AuthController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['userId', 'otpCode'],
+      required: ['email', 'otpCode'],
       properties: {
-        userId: { type: 'string', example: 'f2707400-d110-4963-9aa3-3fe5f171c756' },
+        email: { type: 'string', example: 'jeromeboitenge@gmail.com' },
         otpCode: { type: 'string', example: '123456' },
         userType: { type: 'string', example: 'admin', enum: ['admin', 'user'] }
       }
@@ -47,8 +47,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Returns access and refresh tokens' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
-  async verifyOtp(@Body() body: { userId: string; otpCode: string; userType?: string }) {
-    return this.authService.verifyOtp(body.userId, body.otpCode, body.userType || 'user');
+  async verifyOtp(@Body() body: { email: string; otpCode: string; userType?: string }) {
+    return this.authService.verifyOtp(body.email, body.otpCode, body.userType || 'user');
   }
 
   @Public()

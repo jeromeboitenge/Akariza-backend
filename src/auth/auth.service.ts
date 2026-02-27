@@ -143,7 +143,7 @@ export class AuthService {
       return {
         message: 'OTP sent to your email',
         requiresOtp: true,
-        userId: user.id,
+        userType: 'user',
       };
     }
 
@@ -215,7 +215,6 @@ export class AuthService {
       return {
         message: 'OTP sent to your email',
         requiresOtp: true,
-        userId: admin.id,
         userType: 'admin',
       };
     }
@@ -223,13 +222,13 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  async verifyOtp(userId: string, otpCode: string, userType: string = 'user') {
+  async verifyOtp(email: string, otpCode: string, userType: string = 'user') {
     let user: any;
     
     if (userType === 'admin') {
-      user = await this.prisma.admin.findUnique({ where: { id: userId } });
+      user = await this.prisma.admin.findUnique({ where: { email } });
     } else {
-      user = await this.prisma.user.findUnique({ where: { id: userId } });
+      user = await this.prisma.user.findFirst({ where: { email } });
     }
     
     if (!user) {
