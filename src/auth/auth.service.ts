@@ -144,6 +144,7 @@ export class AuthService {
         message: 'OTP sent to your email',
         requiresOtp: true,
         userType: 'user',
+        otp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
       };
     }
 
@@ -216,6 +217,7 @@ export class AuthService {
         message: 'OTP sent to your email',
         requiresOtp: true,
         userType: 'admin',
+        otp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
       };
     }
 
@@ -383,7 +385,10 @@ export class AuthService {
       console.error('Failed to send password reset email:', error);
     }
 
-    return { message: 'If email exists, OTP has been sent' };
+    return { 
+      message: 'If email exists, OTP has been sent',
+      otp: process.env.NODE_ENV === 'development' ? otpCode : undefined
+    };
   }
 
   async verifyPasswordResetOtp(email: string, otpCode: string) {
