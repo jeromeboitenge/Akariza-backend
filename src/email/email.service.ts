@@ -19,11 +19,18 @@ export class EmailService {
     };
 
     try {
-      await sgMail.send(msg);
+      const result = await sgMail.send(msg);
+      console.log('✅ Email sent successfully to:', to);
+      console.log('SendGrid Response:', result[0].statusCode);
       return { success: true, message: 'Email sent successfully' };
     } catch (error) {
-      console.error('SendGrid Error:', error);
-      throw new Error('Failed to send email');
+      console.error('❌ SendGrid Error Details:');
+      console.error('To:', to);
+      console.error('From:', process.env.SENDGRID_FROM_EMAIL);
+      console.error('Error:', error.response?.body || error.message);
+      
+      // Don't throw error - return failure but allow login to continue
+      return { success: false, message: error.response?.body?.errors?.[0]?.message || 'Failed to send email' };
     }
   }
 

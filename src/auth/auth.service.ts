@@ -93,12 +93,20 @@ export class AuthService {
         data: { otpCode, otpExpiry },
       });
 
+      // Log OTP in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔐 OTP for', user.email, ':', otpCode);
+      }
+
       // Send OTP email
       try {
-        await this.emailService.sendOtpEmail(user.email, user.fullName, otpCode);
+        const result = await this.emailService.sendOtpEmail(user.email, user.fullName, otpCode);
+        if (!result.success) {
+          console.warn('⚠️ Email sending failed but continuing:', result.message);
+        }
       } catch (error) {
         console.error('Failed to send OTP email:', error);
-        throw new UnauthorizedException('Failed to send OTP. Please try again.');
+        // Don't throw - allow login to continue with OTP shown in logs
       }
 
       return {
@@ -157,12 +165,20 @@ export class AuthService {
         data: { otpCode, otpExpiry },
       });
 
+      // Log OTP in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔐 OTP for', admin.email, ':', otpCode);
+      }
+
       // Send OTP email
       try {
-        await this.emailService.sendOtpEmail(admin.email, admin.fullName, otpCode);
+        const result = await this.emailService.sendOtpEmail(admin.email, admin.fullName, otpCode);
+        if (!result.success) {
+          console.warn('⚠️ Email sending failed but continuing:', result.message);
+        }
       } catch (error) {
         console.error('Failed to send OTP email:', error);
-        throw new UnauthorizedException('Failed to send OTP. Please try again.');
+        // Don't throw - allow login to continue with OTP shown in logs
       }
 
       return {
