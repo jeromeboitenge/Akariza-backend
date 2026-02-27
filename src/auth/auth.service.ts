@@ -275,13 +275,6 @@ export class AuthService {
       refreshToken: this.generateRefreshToken(payload),
     };
   }
-        organizationId: user.organizationId,
-        branchId: user.branchId,
-      },
-      accessToken: this.generateAccessToken(payload),
-      refreshToken,
-    };
-  }
 
   async adminLogin(email: string, password: string) {
     return this.login(email, password);
