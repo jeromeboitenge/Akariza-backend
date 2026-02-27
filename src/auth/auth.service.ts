@@ -35,12 +35,65 @@ export class AuthService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
+  validatePasswordStrength(password: string): { valid: boolean; message?: string } {
+    if (password.length < 8) {
+      return { valid: false, message: 'Password must be at least 8 characters long' };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: 'Password must contain at least one uppercase letter' };
+    }
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, message: 'Password must contain at least one lowercase letter' };
+    }
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: 'Password must contain at least one number' };
+    }
+    if (!/[!@#$%^&*]/.test(password)) {
+      return { valid: false, message: 'Password must contain at least one special character (!@#$%^&*)' };
+    }
+    return { valid: true };
+  }
+
   async login(email: string, password: string) {
     // Try user login first
     const user = await this.prisma.user.findFirst({ where: { email, isActive: true } });
     if (user) {
+      // Check if account is locked
+      if (user.lockedUntil && new Date() < user.lockedUntil) {
+        const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+        throw new UnauthorizedException(`Account locked. Try again in ${minutesLeft} minutes.`);
+      }
+
       const isValid = await this.comparePassword(password, user.password);
-      if (!isValid) throw new UnauthorizedException('Invalid credentials');
+      
+      if (!isValid) {
+        // Increment failed attempts
+        const failedAttempts = user.failedLoginAttempts + 1;
+        const updateData: any = { failedLoginAttempts: failedAttempts };
+
+        // Lock account after 5 failed attempts for 30 minutes
+        if (failedAttempts >= 5) {
+          updateData.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          });
+          throw new UnauthorizedException('Account locked due to multiple failed login attempts. Try again in 30 minutes.');
+        }
+
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+
+        throw new UnauthorizedException(`Invalid credentials. ${5 - failedAttempts} attempts remaining.`);
+      }
+
+      // Reset failed attempts on successful login
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
 
       // Generate OTP
       const otpCode = this.generateOtp();

@@ -12,6 +12,12 @@ export class UsersService {
   ) {}
 
   async create(data: any, organizationId: string, creatorId: string) {
+    // Validate password strength
+    const passwordValidation = this.authService.validatePasswordStrength(data.password);
+    if (!passwordValidation.valid) {
+      throw new Error(passwordValidation.message);
+    }
+
     const hashedPassword = await this.authService.hashPassword(data.password);
     const user = await this.prisma.user.create({
       data: {
@@ -22,6 +28,7 @@ export class UsersService {
         fullName: data.fullName,
         role: data.role,
         createdById: creatorId,
+        passwordHistory: [hashedPassword],
       },
       select: { id: true, email: true, fullName: true, role: true, isActive: true },
     });

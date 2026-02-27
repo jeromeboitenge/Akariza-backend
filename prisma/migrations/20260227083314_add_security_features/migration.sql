@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "failedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastPasswordChange" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "lockedUntil" TIMESTAMP(3),
+ADD COLUMN     "passwordHistory" TEXT[] DEFAULT ARRAY[]::TEXT[];

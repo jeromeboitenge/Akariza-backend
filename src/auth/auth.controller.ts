@@ -1,5 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators';
 import { LoginDto, RefreshTokenDto } from './dto/auth.dto';
@@ -10,25 +11,29 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
   @Post('login')
   @ApiOperation({ 
     summary: 'Login (Admin, Boss, Manager, Cashier)',
-    description: 'Step 1: Login with email and password. Users will receive OTP via email. Admins login directly without OTP.'
+    description: 'Step 1: Login with email and password. Users will receive OTP via email. Admins login directly without OTP. Rate limited to 5 attempts per minute.'
   })
   @ApiResponse({ status: 200, description: 'OTP sent to email (for users) or Login successful (for admin)' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
   }
 
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 attempts per minute
   @Post('verify-otp')
   @ApiOperation({ 
     summary: 'Verify OTP',
-    description: 'Step 2: Verify OTP code sent to email to complete login'
+    description: 'Step 2: Verify OTP code sent to email to complete login. Rate limited to 3 attempts per minute.'
   })
   @ApiResponse({ status: 200, description: 'OTP verified, tokens returned' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
   async verifyOtp(@Body() body: { userId: string; otpCode: string }) {
     return this.authService.verifyOtp(body.userId, body.otpCode);
   }
