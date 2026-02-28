@@ -11,17 +11,38 @@ export class BranchesService {
     });
   }
 
-  findAll(organizationId: string) {
+  findAll(organizationId?: string) {
+    // If no organizationId (SYSTEM_ADMIN), return all branches
+    if (!organizationId) {
+      return this.prisma.branch.findMany({
+        where: { isActive: true },
+        include: { 
+          _count: { select: { users: true } },
+          organization: { select: { id: true, name: true } }
+        },
+      });
+    }
+    
     return this.prisma.branch.findMany({
       where: { organizationId, isActive: true },
       include: { _count: { select: { users: true } } },
     });
   }
 
-  findOne(id: string, organizationId: string) {
+  findOne(id: string, organizationId?: string) {
+    // If no organizationId (SYSTEM_ADMIN), don't filter by org
+    const where: any = { id };
+    if (organizationId) {
+      where.organizationId = organizationId;
+    }
+    
     return this.prisma.branch.findFirst({
-      where: { id, organizationId },
-      include: { users: true, products: { include: { product: true } } },
+      where,
+      include: { 
+        users: true, 
+        products: { include: { product: true } },
+        organization: { select: { id: true, name: true } }
+      },
     });
   }
 
