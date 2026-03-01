@@ -50,6 +50,7 @@ export class UsersService {
   }
 
   findAll(organizationId?: string) {
+    console.log('🔍 findAll called with organizationId:', organizationId);
     return this.prisma.user.findMany({
       where: organizationId ? { organizationId } : {},
       select: { 
