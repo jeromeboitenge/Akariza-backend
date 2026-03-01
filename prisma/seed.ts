@@ -42,13 +42,14 @@ async function main() {
     update: {},
     create: {
       id: 'branch-1',
-      organizationId: org.id,
       name: 'Main Branch',
       code: 'MAIN',
       address: '123 Main Street, Kigali',
       phone: '+250788123456',
       email: 'main@store.com',
       isMainBranch: true,
+      organization: { connect: { id: org.id } },
+      createdBy: { connect: { id: admin.id } },
     },
   });
 
@@ -57,12 +58,13 @@ async function main() {
     update: {},
     create: {
       id: 'branch-2',
-      organizationId: org.id,
       name: 'Downtown Branch',
       code: 'DT',
       address: '456 Downtown Ave, Kigali',
       phone: '+250788123457',
       email: 'downtown@store.com',
+      organization: { connect: { id: org.id } },
+      createdBy: { connect: { id: admin.id } },
     },
   });
   console.log('✅ Branches created');

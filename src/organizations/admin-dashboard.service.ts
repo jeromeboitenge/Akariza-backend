@@ -212,7 +212,6 @@ export class AdminDashboardService {
       this.prisma.loginHistory.findMany({
         take: 50,
         orderBy: { createdAt: 'desc' },
-        include: { user: { select: { fullName: true, email: true } } },
       }),
     ]);
 
