@@ -7,6 +7,7 @@ import { CreateProductDto } from '../common/dto/examples.dto';
 @ApiTags('Products')
 @ApiBearerAuth('JWT-auth')
 @Controller('products')
+@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
 export class ProductsController {
   constructor(private service: ProductsService) {}
 
