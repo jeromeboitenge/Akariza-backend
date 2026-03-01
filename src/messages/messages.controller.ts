@@ -104,4 +104,14 @@ export class MessagesController {
   getUnreadCount(@Request() req) {
     return this.service.getUnreadCount(req.user.id, req.user.role, req.user.branchId);
   }
+
+  @Get(':id/audit-trail')
+  @ApiOperation({ 
+    summary: 'Get message audit trail (NON-REPUDIATION)',
+    description: 'Returns complete message history with all metadata for legal/compliance purposes'
+  })
+  @Roles('SYSTEM_ADMIN', 'BOSS')
+  getAuditTrail(@Param('id') id: string, @Request() req) {
+    return this.service.getMessageAuditTrail(id, req.user.organizationId);
+  }
 }
