@@ -121,4 +121,139 @@ export class UsersService {
       data: { isActive: false },
     });
   }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    // Get user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify current password
+    const isValid = await this.authService.comparePassword(currentPassword, user.password);
+    if (!isValid) {
+      throw new Error('Current password is incorrect');
+    }
+
+    // Validate new password strength
+    const validation = this.authService.validatePasswordStrength(newPassword);
+    if (!validation.valid) {
+      throw new Error(validation.message);
+    }
+
+    // Check password history (prevent reuse of last 3 passwords)
+    const passwordHistory = user.passwordHistory || [];
+    for (const oldHash of passwordHistory.slice(-3)) {
+      const isReused = await this.authService.comparePassword(newPassword, oldHash);
+      if (isReused) {
+        throw new Error('Cannot reuse recent passwords');
+      }
+    }
+
+    // Hash new password
+    const hashedPassword = await this.authService.hashPassword(newPassword);
+
+    // Update password and history
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        passwordHistory: [...passwordHistory, hashedPassword].slice(-5), // Keep last 5
+        lastPasswordChange: new Date(),
+      },
+    });
+
+    return { message: 'Password changed successfully' };
+  }
+
+  async resetPassword(userId: string, organizationId: string | undefined, newPassword: string) {
+    // Verify user belongs to organization (if BOSS)
+    if (organizationId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id: userId, organizationId },
+      });
+      if (!user) {
+        throw new Error('User not found in your organization');
+      }
+    }
+
+    // Validate password strength
+    const validation = this.authService.validatePasswordStrength(newPassword);
+    if (!validation.valid) {
+      throw new Error(validation.message);
+    }
+
+    // Hash password
+    const hashedPassword = await this.authService.hashPassword(newPassword);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        passwordHistory: [hashedPassword],
+        lastPasswordChange: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+
+    // Send email notification
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, fullName: true },
+    });
+
+    if (user) {
+      await this.emailService.sendEmail(
+        user.email,
+        'Password Reset - Akariza',
+        this.generatePasswordResetEmail(user.fullName, newPassword)
+      ).catch(err => console.error('Email failed:', err));
+    }
+
+    return { message: 'Password reset successfully' };
+  }
+
+  private generatePasswordResetEmail(name: string, tempPassword: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; }
+          .header { background: #2563eb; padding: 30px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; }
+          .content { padding: 40px 30px; }
+          .password { background: #f8fafc; border: 2px solid #2563eb; padding: 20px; text-align: center; font-size: 24px; font-family: monospace; margin: 20px 0; }
+          .warning { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
+          .footer { background: #f8fafc; padding: 20px; text-align: center; color: #666; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Password Reset</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${name},</p>
+            <p>Your password has been reset by your administrator.</p>
+            <p><strong>Your new temporary password:</strong></p>
+            <div class="password">${tempPassword}</div>
+            <div class="warning">
+              <strong>⚠️ Important:</strong> Please change this password immediately after logging in.
+            </div>
+          </div>
+          <div class="footer">
+            <p>Akariza Stock Management System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }

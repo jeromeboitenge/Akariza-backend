@@ -57,4 +57,32 @@ export class UsersController {
   deactivate(@Param('id') id: string, @Request() req) {
     return this.service.deactivate(id, req.user.organizationId);
   }
+
+  @Patch('change-password')
+  @ApiOperation({ summary: 'Change own password' })
+  @ApiBody({
+    schema: {
+      example: {
+        currentPassword: 'oldPassword123',
+        newPassword: 'newPassword456'
+      }
+    }
+  })
+  changePassword(@Body() data: any, @Request() req) {
+    return this.service.changePassword(req.user.id, data.currentPassword, data.newPassword);
+  }
+
+  @Patch(':id/reset-password')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
+  @ApiOperation({ summary: 'Reset user password (BOSS only)' })
+  @ApiBody({
+    schema: {
+      example: {
+        newPassword: 'tempPassword123'
+      }
+    }
+  })
+  resetPassword(@Param('id') id: string, @Body() data: any, @Request() req) {
+    return this.service.resetPassword(id, req.user.organizationId, data.newPassword);
+  }
 }
