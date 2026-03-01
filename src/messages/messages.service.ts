@@ -154,14 +154,17 @@ export class MessagesService {
 
     // MANAGER sees messages in their branch
     if (userRole === 'MANAGER') {
-      return this.prisma.message.findMany({
+      console.log(`📬 Manager ${userId} fetching messages for branch ${userBranchId}`);
+      
+      const messages = await this.prisma.message.findMany({
         where: {
           organizationId,
           OR: [
             { senderId: userId },
             { receiverId: userId },
             { receiverBranchId: userBranchId },
-            { senderBranchId: userBranchId }
+            { senderBranchId: userBranchId },
+            { targetType: 'ALL_BRANCHES' }, // Include broadcasts
           ],
         },
         include: {
@@ -173,6 +176,9 @@ export class MessagesService {
         orderBy: { createdAt: 'desc' },
         take: limit,
       });
+      
+      console.log(`📬 Found ${messages.length} messages for manager`);
+      return messages;
     }
 
     // CASHIER sees only their own messages
@@ -228,13 +234,14 @@ export class MessagesService {
       });
     }
 
-    // Manager sees unread for their branch
+    // Manager sees unread for their branch + broadcasts
     if (userRole === 'MANAGER') {
       return this.prisma.message.count({
         where: {
           OR: [
             { receiverId: userId, isRead: false },
-            { receiverBranchId: userBranchId, isRead: false }
+            { receiverBranchId: userBranchId, isRead: false },
+            { targetType: 'ALL_BRANCHES', isRead: false },
           ]
         },
       });
@@ -243,6 +250,71 @@ export class MessagesService {
     // Boss sees all unread
     return this.prisma.message.count({
       where: { isRead: false },
+    });
+  }
+
+  async getAvailableUsers(organizationId: string, userId: string, role: string, branchId: string) {
+    if (role === 'BOSS' || role === 'SYSTEM_ADMIN') {
+      // BOSS can message anyone
+      return this.prisma.user.findMany({
+        where: {
+          organizationId,
+          isActive: true,
+          id: { not: userId },
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          branchId: true,
+          branch: { select: { name: true } },
+        },
+        orderBy: { fullName: 'asc' },
+      });
+    }
+
+    if (role === 'MANAGER') {
+      // MANAGER can message users in their branch + BOSS
+      return this.prisma.user.findMany({
+        where: {
+          organizationId,
+          isActive: true,
+          id: { not: userId },
+          OR: [
+            { branchId },
+            { role: 'BOSS' },
+          ],
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          branchId: true,
+          branch: { select: { name: true } },
+        },
+        orderBy: { fullName: 'asc' },
+      });
+    }
+
+    // CASHIER can message users in their branch
+    return this.prisma.user.findMany({
+      where: {
+        organizationId,
+        branchId,
+        isActive: true,
+        id: { not: userId },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        branchId: true,
+        branch: { select: { name: true } },
+      },
+      orderBy: { fullName: 'asc' },
     });
   }
 

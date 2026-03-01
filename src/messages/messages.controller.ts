@@ -71,6 +71,17 @@ export class MessagesController {
     return this.service.getUnreadCount(req.user.id, req.user.role, req.user.branchId);
   }
 
+  @Get('users')
+  @ApiOperation({ summary: 'Get users available for messaging' })
+  getAvailableUsers(@Request() req) {
+    return this.service.getAvailableUsers(
+      req.user.organizationId,
+      req.user.id,
+      req.user.role,
+      req.user.branchId
+    );
+  }
+
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark as read' })
   markAsRead(@Param('id') id: string) {
