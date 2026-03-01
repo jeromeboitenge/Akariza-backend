@@ -6,11 +6,11 @@ import { Roles } from '../common/decorators';
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
-@Roles('SYSTEM_ADMIN', 'BOSS')
 export class UsersController {
   constructor(private service: UsersService) {}
 
   @Post()
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Create user (BOSS only)' })
   @ApiBody({
     schema: {
@@ -33,9 +33,14 @@ export class UsersController {
       id: req.user.id, 
       role: req.user.role, 
       organizationId: req.user.organizationId,
+      branchId: req.user.branchId,
       type: req.user.type 
     });
-    const users = await this.service.findAll(req.user.organizationId);
+    const users = await this.service.findAll(
+      req.user.organizationId, 
+      req.user.role,
+      req.user.branchId
+    );
     console.log('📊 Found users count:', users.length);
     return users;
   }
@@ -47,12 +52,14 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Update user' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
+  @Roles('SYSTEM_ADMIN', 'BOSS')
   @ApiOperation({ summary: 'Deactivate user' })
   deactivate(@Param('id') id: string, @Request() req) {
     return this.service.deactivate(id, req.user.organizationId);

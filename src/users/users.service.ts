@@ -57,9 +57,20 @@ export class UsersService {
     return user;
   }
 
-  async findAll(organizationId?: string) {
-    console.log('🔍 findAll called with organizationId:', organizationId);
-    const where = organizationId ? { organizationId } : {};
+  async findAll(organizationId?: string, userRole?: string, userBranchId?: string) {
+    console.log('🔍 findAll called with:', { organizationId, userRole, userBranchId });
+    
+    let where: any = {};
+    
+    if (organizationId) {
+      where.organizationId = organizationId;
+    }
+    
+    // Managers only see users in their branch
+    if (userRole === 'MANAGER' && userBranchId) {
+      where.branchId = userBranchId;
+    }
+    
     console.log('🔍 Query where clause:', where);
     
     const users = await this.prisma.user.findMany({
