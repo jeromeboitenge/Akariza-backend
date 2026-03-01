@@ -19,7 +19,12 @@ export class AnalyticsService {
       topProducts,
       recentSales,
       pendingPayments,
-      cashierPerformance
+      cashierPerformance,
+      branchesCount,
+      employeesCount,
+      customersCount,
+      productsCount,
+      totalRevenue,
     ] = await Promise.all([
       // Today's sales
       this.prisma.sale.aggregate({
@@ -126,6 +131,36 @@ export class AnalyticsService {
         orderBy: { _sum: { totalAmount: 'desc' } },
         take: 5,
       }),
+
+      // Branches count
+      this.prisma.branch.count({
+        where: { organizationId, isActive: true },
+      }),
+
+      // Employees count (exclude BOSS role)
+      this.prisma.user.count({
+        where: { 
+          organizationId, 
+          isActive: true,
+          role: { not: 'BOSS' },
+        },
+      }),
+
+      // Customers count
+      this.prisma.customer.count({
+        where: { organizationId, isActive: true },
+      }),
+
+      // Products count
+      this.prisma.product.count({
+        where: { organizationId, isActive: true },
+      }),
+
+      // Total revenue (all-time)
+      this.prisma.sale.aggregate({
+        where: { organizationId },
+        _sum: { totalAmount: true },
+      }),
     ]);
 
     // Get product names for top products
@@ -152,6 +187,11 @@ export class AnalyticsService {
         lowStockCount: lowStockProducts.length,
         pendingPayments: pendingPayments._sum.totalAmount || 0,
         pendingPaymentsCount: pendingPayments._count,
+        totalBranches: branchesCount,
+        totalEmployees: employeesCount,
+        totalCustomers: customersCount,
+        totalProducts: productsCount,
+        totalRevenue: totalRevenue._sum.totalAmount || 0,
       },
       lowStockProducts,
       topProductsToday: topProducts.map(p => {
