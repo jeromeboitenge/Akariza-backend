@@ -30,6 +30,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { MessagesModule } from './messages/messages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { EmailModule } from './email/email.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { EmailModule } from './email/email.module';
     PrismaModule,
     AuthModule,
     EmailModule,
+    DashboardModule,
     OrganizationsModule,
     UsersModule,
     ProductsModule,
