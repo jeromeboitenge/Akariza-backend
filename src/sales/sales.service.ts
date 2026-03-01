@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { StockService } from '../stock/stock.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SalesService {
   constructor(
     private prisma: PrismaService,
     private stockService: StockService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(data: any, organizationId: string, userId: string) {
@@ -39,7 +41,7 @@ export class SalesService {
       if (existing) return { message: 'Sale already synced', sale: existing };
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       let totalAmount = 0;
       const enrichedItems = [];
 
@@ -142,6 +144,24 @@ export class SalesService {
 
       return sale;
     });
+
+    // Notify BOSS/MANAGER of large sales (optional - can be configured)
+    const createdSale = await this.prisma.sale.findUnique({ where: { id: result.id } });
+    if (createdSale && createdSale.finalAmount >= 100000) { // Sales over 100k RWF
+      const cashier = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true },
+      });
+      
+      await this.notificationsService.notifyNewSale(
+        createdSale.id,
+        organizationId,
+        createdSale.finalAmount,
+        cashier?.fullName || 'Unknown'
+      ).catch(err => console.error('Notification failed:', err));
+    }
+
+    return result;
   }
 
   findAll(organizationId?: string) {
