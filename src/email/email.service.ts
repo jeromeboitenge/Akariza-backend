@@ -40,61 +40,51 @@ export class EmailService {
   }
 
   async sendWelcomeEmail(to: string, fullName: string, role: string, tempPassword: string) {
-    const subject = 'Welcome to Akariza - Your Account is Ready! 🎉';
+    const subject = 'Welcome to Akariza';
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .header h1 { margin: 0; font-size: 28px; }
-          .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
-          .credentials { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
-          .credentials p { margin: 10px 0; font-size: 15px; }
-          .credentials strong { color: #667eea; }
-          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; }
+          .header { background: #2563eb; padding: 30px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; font-weight: normal; }
+          .content { padding: 40px 30px; }
+          .content p { color: #333; line-height: 1.6; margin: 0 0 15px 0; }
+          .info-box { background: #f8fafc; border-left: 3px solid #2563eb; padding: 20px; margin: 25px 0; }
+          .info-box p { margin: 8px 0; }
+          .password { background: white; border: 1px solid #e5e7eb; padding: 10px 15px; border-radius: 4px; font-family: monospace; font-size: 16px; display: inline-block; }
+          .note { color: #666; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+          .footer { background: #f8fafc; padding: 20px; text-align: center; color: #666; font-size: 13px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Welcome to Akariza!</h1>
+            <h1>Akariza</h1>
           </div>
           <div class="content">
-            <p>Hello <strong>${fullName}</strong>,</p>
-            <p>Your account has been successfully created! We're excited to have you on board.</p>
+            <p>Hi ${fullName},</p>
+            <p>Your account has been created. Here are your login details:</p>
             
-            <div class="credentials">
-              <h3 style="margin-top: 0; color: #667eea;">📋 Your Login Credentials</h3>
+            <div class="info-box">
               <p><strong>Email:</strong> ${to}</p>
               <p><strong>Role:</strong> ${role}</p>
-              <p><strong>Temporary Password:</strong> <code style="background: #e9ecef; padding: 5px 10px; border-radius: 3px; font-size: 16px;">${tempPassword}</code></p>
+              <p><strong>Password:</strong> <span class="password">${tempPassword}</span></p>
             </div>
             
-            <div class="warning">
-              <strong>⚠️ Important Security Notice:</strong>
-              <p style="margin: 5px 0 0 0;">Please change your password immediately after your first login for security purposes.</p>
+            <p><strong>Next steps:</strong></p>
+            <p>1. Login with your email and password<br>
+            2. Enter the OTP sent to your email<br>
+            3. Change your password after first login</p>
+            
+            <div class="note">
+              <p>Keep your password secure and don't share it with anyone.</p>
             </div>
-            
-            <p><strong>Next Steps:</strong></p>
-            <ol>
-              <li>Visit the Akariza login page</li>
-              <li>Enter your email and temporary password</li>
-              <li>Verify the OTP sent to your email</li>
-              <li>Change your password in settings</li>
-            </ol>
-            
-            <p>If you have any questions or need assistance, please contact your system administrator.</p>
-            
-            <p style="margin-top: 30px;">Best regards,<br><strong>Akariza Team</strong></p>
           </div>
           <div class="footer">
-            <p>This is an automated message from Akariza Stock Management System</p>
-            <p style="color: #999; font-size: 12px;">© 2026 Akariza. All rights reserved.</p>
+            <p>Akariza Stock Management System</p>
           </div>
         </div>
       </body>
@@ -170,59 +160,46 @@ export class EmailService {
   }
 
   async sendOtpEmail(to: string, fullName: string, otpCode: string) {
-    const subject = '🔐 Your Akariza Login Code';
+    const subject = 'Your Login Code';
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .header h1 { margin: 0; font-size: 28px; }
-          .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
-          .otp-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; margin: 30px 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .otp-code { font-size: 48px; font-weight: bold; color: white; letter-spacing: 12px; margin: 0; font-family: 'Courier New', monospace; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-          .otp-label { color: rgba(255,255,255,0.9); font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
-          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          .info { background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
-          .timer { color: #dc2626; font-weight: bold; font-size: 16px; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; }
+          .header { background: #2563eb; padding: 30px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; font-weight: normal; }
+          .content { padding: 40px 30px; }
+          .content p { color: #333; line-height: 1.6; margin: 0 0 15px 0; }
+          .otp-box { background: #f8fafc; border: 2px solid #2563eb; border-radius: 8px; padding: 25px; text-align: center; margin: 30px 0; }
+          .otp-code { font-size: 36px; font-weight: bold; color: #2563eb; letter-spacing: 8px; margin: 10px 0; }
+          .note { color: #666; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+          .footer { background: #f8fafc; padding: 20px; text-align: center; color: #666; font-size: 13px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>🔐 Login Verification</h1>
+            <h1>Akariza</h1>
           </div>
           <div class="content">
-            <p>Hello <strong>${fullName}</strong>,</p>
-            <p>You requested to login to your Akariza account. Use the verification code below to complete your login:</p>
+            <p>Hi ${fullName},</p>
+            <p>Here's your verification code to login:</p>
             
             <div class="otp-box">
-              <div class="otp-label">Your Verification Code</div>
               <div class="otp-code">${otpCode}</div>
+              <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Valid for 5 minutes</p>
             </div>
             
-            <div class="warning">
-              <strong>⏱️ Time Sensitive:</strong>
-              <p style="margin: 5px 0 0 0;" class="timer">This code will expire in 5 minutes</p>
-            </div>
+            <p>Enter this code to complete your login.</p>
             
-            <div class="info">
-              <strong>🛡️ Security Tips:</strong>
-              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                <li>Never share this code with anyone</li>
-                <li>Akariza staff will never ask for your OTP</li>
-                <li>If you didn't request this, please contact support immediately</li>
-              </ul>
+            <div class="note">
+              <p>If you didn't request this code, you can safely ignore this email.</p>
             </div>
-            
-            <p style="margin-top: 30px;">Best regards,<br><strong>Akariza Security Team</strong></p>
           </div>
           <div class="footer">
-            <p>This is an automated security message from Akariza</p>
-            <p style="color: #999; font-size: 12px;">© 2026 Akariza. All rights reserved.</p>
+            <p>Akariza Stock Management System</p>
           </div>
         </div>
       </body>
