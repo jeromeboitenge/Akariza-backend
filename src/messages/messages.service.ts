@@ -55,6 +55,39 @@ export class MessagesService {
       throw new Error('Only BOSS can message all branches');
     }
 
+    // Handle ALL_BRANCHES: Create a message for each branch
+    if (targetType === 'ALL_BRANCHES') {
+      const branches = await this.prisma.branch.findMany({
+        where: { organizationId },
+        select: { id: true, name: true }
+      });
+
+      const messages = await Promise.all(
+        branches.map(branch =>
+          this.prisma.message.create({
+            data: {
+              organizationId,
+              senderId,
+              senderBranchId,
+              receiverId: null,
+              receiverBranchId: branch.id,
+              targetType: 'ALL_BRANCHES',
+              message,
+            },
+            include: {
+              sender: { select: { id: true, fullName: true, role: true, email: true } },
+              receiver: { select: { id: true, fullName: true, role: true, email: true } },
+              senderBranch: { select: { id: true, name: true } },
+              receiverBranch: { select: { id: true, name: true } }
+            }
+          })
+        )
+      );
+
+      console.log(`📨 Broadcast message created for ${branches.length} branches`);
+      return messages[0]; // Return first message as representative
+    }
+
     if (targetType === 'BRANCH') {
       // Manager can only message their own branches
       if (senderRole === 'MANAGER') {
