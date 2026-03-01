@@ -28,14 +28,16 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: 'Get all users' })
-  findAll(@Request() req) {
+  async findAll(@Request() req) {
     console.log('👤 User making request:', { 
       id: req.user.id, 
       role: req.user.role, 
       organizationId: req.user.organizationId,
       type: req.user.type 
     });
-    return this.service.findAll(req.user.organizationId);
+    const users = await this.service.findAll(req.user.organizationId);
+    console.log('📊 Found users count:', users.length);
+    return users;
   }
 
   @Get(':id')

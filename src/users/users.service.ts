@@ -49,10 +49,13 @@ export class UsersService {
     return user;
   }
 
-  findAll(organizationId?: string) {
+  async findAll(organizationId?: string) {
     console.log('🔍 findAll called with organizationId:', organizationId);
-    return this.prisma.user.findMany({
-      where: organizationId ? { organizationId } : {},
+    const where = organizationId ? { organizationId } : {};
+    console.log('🔍 Query where clause:', where);
+    
+    const users = await this.prisma.user.findMany({
+      where,
       select: { 
         id: true, 
         email: true, 
@@ -64,6 +67,9 @@ export class UsersService {
         createdAt: true,
       },
     });
+    
+    console.log('📊 Query returned users:', users.length);
+    return users;
   }
 
   findOne(id: string, organizationId?: string) {
