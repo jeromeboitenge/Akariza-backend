@@ -66,17 +66,17 @@ export class PurchasesService {
     });
   }
 
-  findAll(organizationId: string) {
+  findAll(organizationId?: string) {
     return this.prisma.purchase.findMany({
-      where: { organizationId },
+      where: organizationId ? { organizationId } : {},
       include: { supplier: true, items: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  findOne(id: string, organizationId: string) {
+  findOne(id: string, organizationId?: string) {
     return this.prisma.purchase.findFirst({
-      where: { id, organizationId },
+      where: organizationId ? { id, organizationId } : { id },
       include: { supplier: true, items: { include: { product: true } } },
     });
   }

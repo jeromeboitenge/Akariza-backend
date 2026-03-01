@@ -5,7 +5,15 @@ import { PrismaService } from '../common/prisma.service';
 export class BranchesService {
   constructor(private prisma: PrismaService) {}
 
-  create(data: any, organizationId: string) {
+  async create(data: any, organizationId: string) {
+    // Check if branch code already exists in organization
+    const existing = await this.prisma.branch.findFirst({
+      where: { organizationId, code: data.code }
+    });
+    if (existing) {
+      throw new Error('Branch code already exists in this organization');
+    }
+
     return this.prisma.branch.create({
       data: { ...data, organizationId },
     });

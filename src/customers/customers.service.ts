@@ -5,22 +5,30 @@ import { PrismaService } from '../common/prisma.service';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  create(data: any, organizationId: string) {
+  async create(data: any, organizationId: string) {
+    // Check if phone already exists in organization
+    const existing = await this.prisma.customer.findFirst({
+      where: { organizationId, phone: data.phone }
+    });
+    if (existing) {
+      throw new Error('Customer with this phone number already exists');
+    }
+
     return this.prisma.customer.create({
       data: { ...data, organizationId },
     });
   }
 
-  findAll(organizationId: string) {
+  findAll(organizationId?: string) {
     return this.prisma.customer.findMany({
-      where: { organizationId, isActive: true },
+      where: organizationId ? { organizationId, isActive: true } : { isActive: true },
       include: { _count: { select: { sales: true } } },
     });
   }
 
-  findOne(id: string, organizationId: string) {
+  findOne(id: string, organizationId?: string) {
     return this.prisma.customer.findFirst({
-      where: { id, organizationId },
+      where: organizationId ? { id, organizationId } : { id },
       include: { sales: true, transactions: true, loyaltyHistory: true },
     });
   }

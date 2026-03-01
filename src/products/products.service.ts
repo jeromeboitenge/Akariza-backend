@@ -5,7 +5,15 @@ import { PrismaService } from '../common/prisma.service';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  create(data: any, organizationId: string, userId: string) {
+  async create(data: any, organizationId: string, userId: string) {
+    // Check if SKU already exists in organization
+    const existing = await this.prisma.product.findFirst({
+      where: { organizationId, sku: data.sku }
+    });
+    if (existing) {
+      throw new Error('Product SKU already exists in this organization');
+    }
+
     return this.prisma.product.create({
       data: { ...data, organizationId, createdById: userId },
     });
