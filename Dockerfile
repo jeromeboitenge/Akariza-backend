@@ -27,4 +27,4 @@ RUN ls -la dist/
 EXPOSE 5000
 
 # Start the application
-CMD sh -c "npx prisma migrate deploy && node dist/src/main.js"
+CMD sh -c "npx prisma migrate deploy --schema=./prisma/schema.prisma || true && node dist/src/main.js"
