@@ -5,7 +5,23 @@ import { PrismaService } from '../common/prisma.service';
 export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
-  create(data: any, organizationId: string) {
+  async create(data: any, organizationId: string) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: data.userId }
+    });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Check if user already has employee record
+    const existingEmployee = await this.prisma.employee.findUnique({
+      where: { userId: data.userId }
+    });
+    if (existingEmployee) {
+      throw new Error('User already has an employee record');
+    }
+
     return this.prisma.employee.create({
       data: { ...data, organizationId },
       include: { user: true },

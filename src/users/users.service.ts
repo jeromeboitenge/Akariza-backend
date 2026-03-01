@@ -12,6 +12,14 @@ export class UsersService {
   ) {}
 
   async create(data: any, organizationId: string, creatorId: string) {
+    // Check if email already exists
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: data.email }
+    });
+    if (existingUser) {
+      throw new Error('Email already exists in the system');
+    }
+
     // Validate password strength
     const passwordValidation = this.authService.validatePasswordStrength(data.password);
     if (!passwordValidation.valid) {
