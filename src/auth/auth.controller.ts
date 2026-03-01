@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nes
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators';
-import { LoginDto, RefreshTokenDto } from './dto/auth.dto';
+import { LoginDto, RefreshTokenDto, VerifyOtpDto } from './dto/auth.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -46,8 +46,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Returns access and refresh tokens' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
-  async verifyOtp(@Body() body: { email: string; otpCode: string }) {
-    return this.authService.verifyOtp(body.email, body.otpCode);
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
+    return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otpCode);
   }
 
   @Public()

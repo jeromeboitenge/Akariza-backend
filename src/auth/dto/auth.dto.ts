@@ -14,6 +14,18 @@ export class LoginDto {
   password: string;
 }
 
+export class VerifyOtpDto {
+  @ApiProperty({ example: 'boss@store.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  otpCode: string;
+}
+
 export class RefreshTokenDto {
   @ApiProperty()
   @IsString()
