@@ -16,6 +16,20 @@ export class SalesService {
       if (!data.customerId) {
         throw new Error('Customer is required for credit/loan sales');
       }
+      
+      // Verify customer exists and belongs to organization
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: data.customerId, organizationId, isActive: true },
+      });
+      if (!customer) {
+        throw new Error('Customer not found or inactive');
+      }
+      
+      // Check credit limit
+      const newDebt = customer.currentDebt + (data.finalAmount - (data.amountPaid || 0));
+      if (customer.creditLimit > 0 && newDebt > customer.creditLimit) {
+        throw new Error(`Credit limit exceeded. Limit: ${customer.creditLimit}, Current debt: ${customer.currentDebt}`);
+      }
     }
 
     if (data.mobileRecordId) {
@@ -115,6 +129,15 @@ export class SalesService {
           sale.id,
           userId,
         );
+      }
+
+      // Update customer debt if credit sale
+      if (data.customerId && calculatedPaymentStatus !== 'PAID') {
+        const debtAmount = finalAmount - amountPaid;
+        await tx.customer.update({
+          where: { id: data.customerId },
+          data: { currentDebt: { increment: debtAmount } },
+        });
       }
 
       return sale;
