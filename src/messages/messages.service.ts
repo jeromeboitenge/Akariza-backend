@@ -103,7 +103,7 @@ export class MessagesService {
     return createdMessage;
   }
 
-  async findAll(organizationId: string, userId: string, userRole: string, userBranchId: string) {
+  async findAll(organizationId: string, userId: string, userRole: string, userBranchId: string, limit: number = 50) {
     // BOSS sees all messages in organization
     if (userRole === 'BOSS' || userRole === 'SYSTEM_ADMIN') {
       return this.prisma.message.findMany({
@@ -115,7 +115,7 @@ export class MessagesService {
           receiverBranch: { select: { id: true, name: true } }
         },
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: limit,
       });
     }
 
@@ -138,7 +138,7 @@ export class MessagesService {
           receiverBranch: { select: { id: true, name: true } }
         },
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: limit,
       });
     }
 
@@ -158,7 +158,7 @@ export class MessagesService {
         receiverBranch: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: limit,
     });
   }
 
