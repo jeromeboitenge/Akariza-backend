@@ -86,25 +86,26 @@ model User {
 }
 
 model Product {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   organizationId String
   name           String
   sku            String
-  category       String   @default("General")
-  unit           String   @default("piece")
+  category       String    @default("General")
+  unit           String    @default("piece")
   costPrice      Float
   sellingPrice   Float
-  currentStock   Float    @default(0)
-  minStockLevel  Float    @default(0)
-  maxStockLevel  Float    @default(0)
-  reorderPoint   Float    @default(0)
-  hasExpiry      Boolean  @default(false)
-  trackBatch     Boolean  @default(false)
-  trackSerial    Boolean  @default(false)
-  isActive       Boolean  @default(true)
+  currentStock   Float     @default(0)
+  minStockLevel  Float     @default(0)
+  maxStockLevel  Float     @default(0)
+  reorderPoint   Float     @default(0)
+  hasExpiry      Boolean   @default(false)
+  expirationDate DateTime?
+  trackBatch     Boolean   @default(false)
+  trackSerial    Boolean   @default(false)
+  isActive       Boolean   @default(true)
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization      Organization       @relation(fields: [organizationId], references: [id])
   createdBy         User               @relation("ProductCreator", fields: [createdById], references: [id])

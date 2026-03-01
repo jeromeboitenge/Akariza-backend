@@ -6,9 +6,8 @@ export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
   create(data: any, organizationId: string, userId: string) {
-    const { expirationDate, ...productData } = data;
     return this.prisma.product.create({
-      data: { ...productData, organizationId, createdById: userId },
+      data: { ...data, organizationId, createdById: userId },
     });
   }
 
