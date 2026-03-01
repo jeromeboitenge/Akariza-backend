@@ -15,6 +15,12 @@ export class ProductsService {
     return this.prisma.product.findMany({ where: { organizationId, isActive: true } });
   }
 
+  findByType(organizationId: string, type: string) {
+    return this.prisma.product.findMany({ 
+      where: { organizationId, isActive: true, productType: type } 
+    });
+  }
+
   findOne(id: string, organizationId: string) {
     return this.prisma.product.findFirst({ where: { id, organizationId } });
   }

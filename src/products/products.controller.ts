@@ -55,6 +55,12 @@ export class ProductsController {
     return this.service.findAll(req.user.organizationId);
   }
 
+  @Get('type/:type')
+  @ApiOperation({ summary: 'Get products by type (REGULAR or FAST_MOVING)' })
+  findByType(@Param('type') type: string, @Request() req) {
+    return this.service.findByType(req.user.organizationId, type);
+  }
+
   @Get('low-stock')
   findLowStock(@Request() req) {
     return this.service.findLowStock(req.user.organizationId);
