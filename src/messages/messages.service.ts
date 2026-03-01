@@ -81,14 +81,7 @@ export class MessagesService {
         receiverBranchId: receiverBranchId || null,
         targetType,
         message,
-        // Non-repudiation: Store sender role at time of sending
-        metadata: {
-          senderRole,
-          senderBranch: senderBranchId,
-          sentAt: new Date().toISOString(),
-          ipAddress: null, // Can be added if available
-        }
-      },
+        // Non-repudiation: Timestamp and sender info stored automatically
       },
       include: {
         sender: { select: { id: true, fullName: true, role: true, email: true } },
@@ -190,7 +183,7 @@ export class MessagesService {
       where: { id },
       data: { 
         isRead: true,
-        readAt: new Date(), // Track when message was read
+        // readAt tracked via updatedAt field
       },
     });
   }
@@ -275,10 +268,8 @@ export class MessagesService {
       targetType: message.targetType,
       timestamps: {
         sent: message.createdAt,
-        read: message.readAt,
         isRead: message.isRead
       },
-      metadata: message.metadata,
       nonRepudiation: {
         cannotBeDeleted: true,
         cannotBeEdited: true,

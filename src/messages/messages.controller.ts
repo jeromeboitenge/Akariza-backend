@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
+import { Roles } from '../common/decorators';
 
 @ApiTags('Messages')
 @ApiBearerAuth()
