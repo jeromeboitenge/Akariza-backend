@@ -25,6 +25,8 @@ export class AnalyticsService {
       customersCount,
       productsCount,
       totalRevenue,
+      totalExpenses,
+      totalPurchases,
     ] = await Promise.all([
       // Today's sales
       this.prisma.sale.aggregate({
@@ -160,6 +162,19 @@ export class AnalyticsService {
       this.prisma.sale.aggregate({
         where: { organizationId },
         _sum: { totalAmount: true },
+        _count: true,
+      }),
+
+      // Total expenses
+      this.prisma.expense.aggregate({
+        where: { organizationId },
+        _sum: { amount: true },
+      }),
+
+      // Total purchases
+      this.prisma.purchase.aggregate({
+        where: { organizationId },
+        _sum: { totalAmount: true },
       }),
     ]);
 
@@ -177,9 +192,21 @@ export class AnalyticsService {
       select: { id: true, fullName: true, role: true },
     });
 
+    // Calculate today's profit (simple estimation: revenue - expenses for today)
+    const todayExpenses = await this.prisma.expense.aggregate({
+      where: {
+        organizationId,
+        date: { gte: startOfDay },
+      },
+      _sum: { amount: true },
+    });
+
+    const todayProfit = (todaySales._sum.totalAmount || 0) - (todayExpenses._sum.amount || 0);
+
     return {
       summary: {
         todaySales: todaySales._sum.totalAmount || 0,
+        todayProfit: todayProfit,
         todayTransactions: todaySales._count,
         monthSales: monthSales._sum.totalAmount || 0,
         monthTransactions: monthSales._count,
@@ -192,6 +219,9 @@ export class AnalyticsService {
         totalCustomers: customersCount,
         totalProducts: productsCount,
         totalRevenue: totalRevenue._sum.totalAmount || 0,
+        totalSales: totalRevenue._count || 0,
+        totalExpenses: totalExpenses._sum.amount || 0,
+        totalPurchases: totalPurchases._sum.totalAmount || 0,
       },
       lowStockProducts,
       topProductsToday: topProducts.map(p => {
