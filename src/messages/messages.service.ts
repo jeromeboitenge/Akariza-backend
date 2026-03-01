@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 
+/**
+ * MessagesService - Handles organizational messaging
+ * 
+ * NON-REPUDIATION POLICY:
+ * - Messages CANNOT be deleted (audit trail requirement)
+ * - Messages CANNOT be edited (integrity requirement)
+ * - All messages are permanently stored with timestamps
+ * - Sender/receiver information is immutable
+ * - Only mark as read is allowed
+ */
 @Injectable()
 export class MessagesService {
   constructor(private prisma: PrismaService) {}
