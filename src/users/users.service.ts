@@ -49,21 +49,31 @@ export class UsersService {
     return user;
   }
 
-  findAll(organizationId: string) {
+  findAll(organizationId?: string) {
     return this.prisma.user.findMany({
-      where: { organizationId },
+      where: organizationId ? { organizationId } : {},
       select: { id: true, email: true, fullName: true, role: true, isActive: true },
     });
   }
 
-  findOne(id: string, organizationId: string) {
+  findOne(id: string, organizationId?: string) {
     return this.prisma.user.findFirst({
-      where: { id, organizationId },
+      where: organizationId ? { id, organizationId } : { id },
       select: { id: true, email: true, fullName: true, role: true, isActive: true },
     });
   }
 
-  update(id: string, organizationId: string, data: any) {
+  async update(id: string, organizationId: string | undefined, data: any) {
+    // If organizationId is provided (BOSS), verify user belongs to that org
+    if (organizationId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id, organizationId },
+      });
+      if (!user) {
+        throw new Error('User not found in your organization');
+      }
+    }
+    
     return this.prisma.user.update({
       where: { id },
       data,
@@ -71,7 +81,17 @@ export class UsersService {
     });
   }
 
-  deactivate(id: string, organizationId: string) {
+  async deactivate(id: string, organizationId: string | undefined) {
+    // If organizationId is provided (BOSS), verify user belongs to that org
+    if (organizationId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id, organizationId },
+      });
+      if (!user) {
+        throw new Error('User not found in your organization');
+      }
+    }
+    
     return this.prisma.user.update({
       where: { id },
       data: { isActive: false },
