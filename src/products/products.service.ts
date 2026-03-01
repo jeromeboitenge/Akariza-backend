@@ -11,18 +11,22 @@ export class ProductsService {
     });
   }
 
-  findAll(organizationId: string) {
-    return this.prisma.product.findMany({ where: { organizationId, isActive: true } });
+  findAll(organizationId?: string) {
+    return this.prisma.product.findMany({ 
+      where: organizationId ? { organizationId, isActive: true } : { isActive: true } 
+    });
   }
 
   findByType(organizationId: string, type: string) {
     return this.prisma.product.findMany({ 
-      where: { organizationId, isActive: true, productType: type } 
+      where: organizationId ? { organizationId, isActive: true, productType: type } : { isActive: true, productType: type }
     });
   }
 
-  findOne(id: string, organizationId: string) {
-    return this.prisma.product.findFirst({ where: { id, organizationId } });
+  findOne(id: string, organizationId?: string) {
+    return this.prisma.product.findFirst({ 
+      where: organizationId ? { id, organizationId } : { id }
+    });
   }
 
   update(id: string, organizationId: string, data: any) {

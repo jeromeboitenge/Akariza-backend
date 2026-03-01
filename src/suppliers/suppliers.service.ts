@@ -11,12 +11,16 @@ export class SuppliersService {
     });
   }
 
-  findAll(organizationId: string) {
-    return this.prisma.supplier.findMany({ where: { organizationId, isActive: true } });
+  findAll(organizationId?: string) {
+    return this.prisma.supplier.findMany({ 
+      where: organizationId ? { organizationId, isActive: true } : { isActive: true }
+    });
   }
 
-  findOne(id: string, organizationId: string) {
-    return this.prisma.supplier.findFirst({ where: { id, organizationId } });
+  findOne(id: string, organizationId?: string) {
+    return this.prisma.supplier.findFirst({ 
+      where: organizationId ? { id, organizationId } : { id }
+    });
   }
 
   update(id: string, data: any) {
