@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(userId: string, type: string, title: string, message: string, data?: any) {
     return this.prisma.notification.create({
@@ -45,7 +49,7 @@ export class NotificationsService {
         role: { in: ['BOSS', 'MANAGER'] },
         isActive: true,
       },
-      select: { id: true },
+      select: { id: true, email: true, fullName: true, role: true },
     });
 
     const userIds = users.map(u => u.id);
@@ -58,6 +62,20 @@ export class NotificationsService {
         `${product.name} is running low. Current: ${product.currentStock}, Min: ${product.minStockLevel}`,
         { productId: product.id, productName: product.name, currentStock: product.currentStock }
       );
+    }
+
+    // Send email to managers
+    const managers = users.filter(u => u.role === 'MANAGER');
+    for (const manager of managers) {
+      const productList = lowStockProducts.map(p => 
+        `- ${p.name}: ${p.currentStock} units (Min: ${p.minStockLevel})`
+      ).join('\n');
+
+      await this.emailService.sendEmail(
+        manager.email,
+        'Low Stock Alert - Akariza',
+        this.generateLowStockEmail(manager.fullName, productList, lowStockProducts.length)
+      ).catch(err => console.error('Email failed:', err));
     }
 
     return { notified: userIds.length, products: lowStockProducts.length };
@@ -89,7 +107,7 @@ export class NotificationsService {
         role: { in: ['BOSS', 'MANAGER'] },
         isActive: true,
       },
-      select: { id: true },
+      select: { id: true, email: true, fullName: true, role: true },
     });
 
     const userIds = users.map(u => u.id);
@@ -103,6 +121,21 @@ export class NotificationsService {
         `${product.name} expires in ${daysLeft} days (${product.expirationDate.toLocaleDateString()})`,
         { productId: product.id, productName: product.name, expirationDate: product.expirationDate }
       );
+    }
+
+    // Send email to managers
+    const managers = users.filter(u => u.role === 'MANAGER');
+    for (const manager of managers) {
+      const productList = expiringProducts.map(p => {
+        const daysLeft = Math.ceil((p.expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        return `- ${p.name}: Expires in ${daysLeft} days (${p.expirationDate.toLocaleDateString()})`;
+      }).join('\n');
+
+      await this.emailService.sendEmail(
+        manager.email,
+        'Product Expiry Alert - Akariza',
+        this.generateExpiryEmail(manager.fullName, productList, expiringProducts.length)
+      ).catch(err => console.error('Email failed:', err));
     }
 
     return { notified: userIds.length, products: expiringProducts.length };
@@ -247,5 +280,84 @@ export class NotificationsService {
     return this.prisma.notification.deleteMany({
       where: { userId },
     });
+  }
+
+  // Email templates
+  private generateLowStockEmail(name: string, productList: string, count: number): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; }
+          .header { background: #2563eb; padding: 30px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; }
+          .content { padding: 40px 30px; }
+          .alert { background: #fef2f2; border-left: 4px solid #dc2626; padding: 20px; margin: 20px 0; }
+          .products { background: #f8fafc; padding: 20px; margin: 20px 0; font-family: monospace; white-space: pre-line; }
+          .footer { background: #f8fafc; padding: 20px; text-align: center; color: #666; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⚠️ Low Stock Alert</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${name},</p>
+            <div class="alert">
+              <strong>${count} product(s) are running low on stock</strong>
+            </div>
+            <p><strong>Products needing restock:</strong></p>
+            <div class="products">${productList}</div>
+            <p>Please review and reorder as needed.</p>
+          </div>
+          <div class="footer">
+            <p>Akariza Stock Management System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateExpiryEmail(name: string, productList: string, count: number): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; }
+          .header { background: #2563eb; padding: 30px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; }
+          .content { padding: 40px 30px; }
+          .alert { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; }
+          .products { background: #f8fafc; padding: 20px; margin: 20px 0; font-family: monospace; white-space: pre-line; }
+          .footer { background: #f8fafc; padding: 20px; text-align: center; color: #666; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⏰ Product Expiry Alert</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${name},</p>
+            <div class="alert">
+              <strong>${count} product(s) are expiring soon</strong>
+            </div>
+            <p><strong>Products expiring within 7 days:</strong></p>
+            <div class="products">${productList}</div>
+            <p>Please take action to avoid waste.</p>
+          </div>
+          <div class="footer">
+            <p>Akariza Stock Management System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 }
