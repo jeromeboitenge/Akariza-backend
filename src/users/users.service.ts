@@ -52,7 +52,16 @@ export class UsersService {
   findAll(organizationId?: string) {
     return this.prisma.user.findMany({
       where: organizationId ? { organizationId } : {},
-      select: { id: true, email: true, fullName: true, role: true, isActive: true },
+      select: { 
+        id: true, 
+        email: true, 
+        fullName: true, 
+        role: true, 
+        isActive: true,
+        organizationId: true,
+        branchId: true,
+        createdAt: true,
+      },
     });
   }
 

@@ -144,7 +144,6 @@ export class AuthService {
         message: 'OTP sent to your email',
         requiresOtp: true,
         userType: 'user',
-        otp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
       };
     }
 
@@ -217,7 +216,6 @@ export class AuthService {
         message: 'OTP sent to your email',
         requiresOtp: true,
         userType: 'admin',
-        otp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
       };
     }
 

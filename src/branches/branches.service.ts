@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
@@ -101,6 +101,71 @@ export class BranchesService {
         where: { id: transferId },
         data: { status: 'COMPLETED', approvedById: userId },
       });
+    });
+  }
+
+  // ============= SYSTEM_ADMIN METHODS =============
+
+  async createByAdmin(data: any, adminId: string) {
+    const { organizationId, ...branchData } = data;
+    
+    return this.prisma.branch.create({
+      data: {
+        ...branchData,
+        organizationId,
+        createdById: adminId,
+      },
+      include: {
+        organization: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, fullName: true, email: true } },
+      },
+    });
+  }
+
+  async findAllByAdmin() {
+    return this.prisma.branch.findMany({
+      include: {
+        organization: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, fullName: true, email: true } },
+        _count: { select: { users: true, products: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findByOrganization(organizationId: string) {
+    return this.prisma.branch.findMany({
+      where: { organizationId },
+      include: {
+        createdBy: { select: { id: true, fullName: true, email: true } },
+        _count: { select: { users: true, products: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOneByAdmin(id: string) {
+    const branch = await this.prisma.branch.findUnique({
+      where: { id },
+      include: {
+        organization: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, fullName: true, email: true } },
+        users: { select: { id: true, fullName: true, email: true, role: true } },
+        _count: { select: { products: true, sales: true, purchases: true } },
+      },
+    });
+
+    if (!branch) {
+      throw new NotFoundException('Branch not found');
+    }
+
+    return branch;
+  }
+
+  async activate(id: string) {
+    return this.prisma.branch.update({
+      where: { id },
+      data: { isActive: true },
     });
   }
 }

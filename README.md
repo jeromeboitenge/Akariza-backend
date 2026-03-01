@@ -49,6 +49,24 @@ All endpoints prefixed with `/api`
 - `PATCH /api/admin/organizations/:id` - Update
 - `DELETE /api/admin/organizations/:id` - Deactivate
 
+### Branches (System Admin)
+- `POST /api/admin/branches` - Create branch for any organization
+- `GET /api/admin/branches` - List all branches across all organizations
+- `GET /api/admin/branches/organization/:orgId` - Get branches for specific organization
+- `GET /api/admin/branches/:id` - Get branch details
+- `PATCH /api/admin/branches/:id` - Update branch
+- `DELETE /api/admin/branches/:id` - Deactivate branch
+- `PATCH /api/admin/branches/:id/activate` - Activate branch
+
+### Dashboard (System Admin - Read Only)
+- `GET /api/admin/dashboard/overview` - System-wide overview
+- `GET /api/admin/dashboard/organizations/stats` - All organizations statistics
+- `GET /api/admin/dashboard/organizations/:id/stats` - Specific organization details
+- `GET /api/admin/dashboard/sales?startDate&endDate` - System-wide sales stats
+- `GET /api/admin/dashboard/products/top-selling?limit=20` - Top products
+- `GET /api/admin/dashboard/users/activity` - User activity
+- `GET /api/admin/dashboard/branches/stats` - All branches statistics
+
 ### Users (Boss)
 - `POST /api/users` - Create user
 - `GET /api/users` - List users
