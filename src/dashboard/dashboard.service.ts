@@ -108,6 +108,8 @@ export class DashboardService {
       lowStockProducts,
       pendingPurchaseOrders,
       recentExpenses,
+      totalProducts,
+      totalCustomers,
     ] = await Promise.all([
       // Today's branch sales
       this.prisma.sale.aggregate({
@@ -181,6 +183,14 @@ export class DashboardService {
         orderBy: { date: 'desc' },
         take: 10,
       }),
+      // Total products
+      this.prisma.product.count({
+        where: { organizationId, isActive: true },
+      }),
+      // Total customers
+      this.prisma.customer.count({
+        where: { organizationId, isActive: true },
+      }),
     ]);
 
     return {
@@ -193,6 +203,8 @@ export class DashboardService {
         staffCount: branchStaff.length,
         lowStockCount: lowStockProducts.length,
         pendingPOCount: pendingPurchaseOrders.length,
+        totalProducts,
+        totalCustomers,
       },
       topSellingProducts,
       branchStaff,
