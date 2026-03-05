@@ -256,8 +256,8 @@ export class MessagesService {
     });
   }
 
-  findConversation(userId1: string, userId2: string) {
-    return this.prisma.message.findMany({
+  async findConversation(userId1: string, userId2: string) {
+    const messages = await this.prisma.message.findMany({
       where: {
         OR: [
           { senderId: userId1, receiverId: userId2 },
@@ -270,6 +270,12 @@ export class MessagesService {
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    // Ensure dates are properly serialized
+    return messages.map(msg => ({
+      ...msg,
+      createdAt: msg.createdAt.toISOString(),
+    }));
   }
 
   markAsRead(id: string) {

@@ -24,7 +24,6 @@ export class OrgChatService {
     return {
       ...msg,
       createdAt: msg.createdAt.toISOString(),
-      updatedAt: msg.updatedAt?.toISOString(),
     };
   }
 
@@ -43,7 +42,6 @@ export class OrgChatService {
     return messages.map(msg => ({
       ...msg,
       createdAt: msg.createdAt.toISOString(),
-      updatedAt: msg.updatedAt?.toISOString(),
     }));
   }
 
