@@ -6,7 +6,7 @@ export class OrgChatService {
   constructor(private prisma: PrismaService) {}
 
   async sendMessage(organizationId: string, senderId: string, message: string, recipientId?: string) {
-    return this.prisma.message.create({
+    const msg = await this.prisma.message.create({
       data: {
         organizationId,
         senderId,
@@ -19,10 +19,17 @@ export class OrgChatService {
         receiver: { select: { fullName: true, email: true } },
       },
     });
+
+    // Ensure dates are properly serialized
+    return {
+      ...msg,
+      createdAt: msg.createdAt.toISOString(),
+      updatedAt: msg.updatedAt?.toISOString(),
+    };
   }
 
   async getOrgMessages(organizationId: string, limit = 50) {
-    return this.prisma.message.findMany({
+    const messages = await this.prisma.message.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -31,6 +38,13 @@ export class OrgChatService {
         receiver: { select: { fullName: true, email: true } },
       },
     });
+
+    // Ensure dates are properly serialized
+    return messages.map(msg => ({
+      ...msg,
+      createdAt: msg.createdAt.toISOString(),
+      updatedAt: msg.updatedAt?.toISOString(),
+    }));
   }
 
   async getConversation(organizationId: string, userId: string, otherUserId: string) {
