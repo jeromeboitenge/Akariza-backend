@@ -77,6 +77,24 @@ export class CreateProductDto {
   @ApiProperty({ example: false, description: 'Track by serial number?', required: false })
   @IsOptional()
   trackSerial?: boolean;
+
+  @ApiProperty({ 
+    example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg', 
+    description: 'Product image URL from Cloudinary', 
+    required: false 
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiProperty({ 
+    example: 'High quality rice imported from Thailand', 
+    description: 'Product description', 
+    required: false 
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
 }
 
 export class CreateSaleDto {
