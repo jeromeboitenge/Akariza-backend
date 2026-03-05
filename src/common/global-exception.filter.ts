@@ -1,4 +1,4 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
@@ -8,23 +8,44 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal server error';
+    let error = 'Internal Server Error';
 
-    const message = exception instanceof HttpException
-      ? exception.message
-      : 'Internal server error';
-
-    // Log error (but don't expose details to client)
-    if (status === 500) {
-      console.error('Internal Server Error:', exception);
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const exceptionResponse = exception.getResponse();
+      
+      if (typeof exceptionResponse === 'string') {
+        message = exceptionResponse;
+        error = exceptionResponse;
+      } else if (typeof exceptionResponse === 'object') {
+        message = (exceptionResponse as any).message || exception.message;
+        error = (exceptionResponse as any).error || exception.name;
+      }
+    } else if (exception instanceof Error) {
+      // Handle regular Error objects
+      status = HttpStatus.BAD_REQUEST;
+      message = exception.message || 'An error occurred';
+      error = 'Bad Request';
+      
+      // Log the full error for debugging
+      console.error('❌ Error:', {
+        message: exception.message,
+        stack: exception.stack,
+        path: request.url
+      });
+    } else {
+      // Unknown error type
+      console.error('❌ Unknown error:', exception);
+      message = 'An unexpected error occurred';
     }
 
-    // Send safe error response
+    // Send detailed error response
     response.status(status).json({
       statusCode: status,
-      message: status === 500 ? 'Internal server error' : message,
+      message,
+      error,
       timestamp: new Date().toISOString(),
       path: request.url,
     });

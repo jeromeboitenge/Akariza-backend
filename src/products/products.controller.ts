@@ -46,8 +46,13 @@ export class ProductsController {
       }
     }
   })
-  create(@Body() data: CreateProductDto, @Request() req) {
-    return this.service.create(data, req.user.organizationId, req.user.id);
+  async create(@Body() data: CreateProductDto, @Request() req) {
+    try {
+      return await this.service.create(data, req.user.organizationId, req.user.id);
+    } catch (error) {
+      console.error('❌ Product creation failed:', error.message);
+      throw error;
+    }
   }
 
   @Get()
