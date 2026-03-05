@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { StockService } from '../stock/stock.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ReportGeneratorService } from '../reports/report-generator.service';
 
 @Injectable()
 export class SalesService {
@@ -9,6 +10,7 @@ export class SalesService {
     private prisma: PrismaService,
     private stockService: StockService,
     private notificationsService: NotificationsService,
+    private reportGenerator: ReportGeneratorService,
   ) {}
 
   async create(data: any, organizationId: string, userId: string) {
@@ -160,6 +162,10 @@ export class SalesService {
         cashier?.fullName || 'Unknown'
       ).catch(err => console.error('Notification failed:', err));
     }
+
+    // Generate all affected reports asynchronously
+    this.reportGenerator.generateReportsForSale(result.id)
+      .catch(err => console.error('Report generation failed:', err));
 
     return result;
   }
