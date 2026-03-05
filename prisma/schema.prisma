@@ -104,6 +104,8 @@ model Product {
   expirationDate DateTime?
   trackBatch     Boolean  @default(false)
   trackSerial    Boolean  @default(false)
+  imageUrl       String?
+  description    String?
   isActive       Boolean  @default(true)
   createdById    String
   createdAt      DateTime @default(now())
