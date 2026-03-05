@@ -15,8 +15,18 @@ export class ReportsService {
     });
 
     const totalSales = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+    const totalItemsSold = sales.reduce((sum, s) => {
+      return sum + s.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+    const averageTransaction = sales.length > 0 ? totalSales / sales.length : 0;
 
-    return { totalSales, totalTransactions: sales.length, sales };
+    return { 
+      totalSales, 
+      totalTransactions: sales.length, 
+      totalItemsSold,
+      averageTransaction,
+      sales 
+    };
   }
 
   async getMonthlySales(organizationId: string, year: number, month: number) {
@@ -25,7 +35,15 @@ export class ReportsService {
 
     const sales = await this.prisma.sale.findMany({
       where: { organizationId, createdAt: { gte: startDate, lte: endDate } },
+      include: { items: true },
     });
+
+    const totalSales = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+    const totalItemsSold = sales.reduce((sum, s) => {
+      return sum + s.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const averagePerDay = totalSales / daysInMonth;
 
     const grouped = sales.reduce((acc, sale) => {
       const day = sale.createdAt.toISOString().split('T')[0];
@@ -35,7 +53,13 @@ export class ReportsService {
       return acc;
     }, {});
 
-    return Object.values(grouped);
+    return { 
+      totalSales, 
+      totalTransactions: sales.length,
+      totalItemsSold,
+      averagePerDay,
+      dailyBreakdown: Object.values(grouped) 
+    };
   }
 
   async getProfitReport(organizationId: string, startDate: Date, endDate: Date) {
@@ -46,15 +70,27 @@ export class ReportsService {
 
     let totalRevenue = 0;
     let totalCost = 0;
+    let totalItemsSold = 0;
 
     sales.forEach(sale => {
       sale.items.forEach(item => {
         totalRevenue += item.total;
         totalCost += item.quantity * item.costPrice;
+        totalItemsSold += item.quantity;
       });
     });
 
-    return { totalRevenue, totalCost, profit: totalRevenue - totalCost };
+    const netProfit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+    return { 
+      totalRevenue, 
+      totalCost, 
+      netProfit,
+      profitMargin: Math.round(profitMargin * 100) / 100,
+      totalTransactions: sales.length,
+      totalItemsSold
+    };
   }
 
   async getBestSelling(organizationId: string, limit: number = 10) {
