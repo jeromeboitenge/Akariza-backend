@@ -159,6 +159,64 @@ export class EmailService {
     return this.sendEmail(to, subject, html);
   }
 
+  async sendPasswordChangeOtpEmail(to: string, fullName: string, otpCode: string) {
+    const subject = '🔐 Password Change Verification - Akariza';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
+          .otp-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; margin: 30px 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .otp-code { font-size: 48px; font-weight: bold; color: white; letter-spacing: 12px; margin: 0; font-family: 'Courier New', monospace; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+          .otp-label { color: rgba(255,255,255,0.9); font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .info { background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Password Change</h1>
+          </div>
+          <div class="content">
+            <p>Hello <strong>${fullName}</strong>,</p>
+            <p>You requested to change your password. Use the verification code below to proceed:</p>
+            
+            <div class="otp-box">
+              <div class="otp-label">Your Verification Code</div>
+              <div class="otp-code">${otpCode}</div>
+            </div>
+            
+            <div class="warning">
+              <strong>⏱️ Time Sensitive:</strong>
+              <p style="margin: 5px 0 0 0;">This code will expire in <strong>5 minutes</strong></p>
+            </div>
+            
+            <div class="info">
+              <strong>🛡️ Security Notice:</strong>
+              <p style="margin: 5px 0 0 0;">If you didn't request this password change, please ignore this email and contact support immediately.</p>
+            </div>
+            
+            <p style="margin-top: 30px;">Best regards,<br><strong>Akariza Security Team</strong></p>
+          </div>
+          <div class="footer">
+            <p>This is an automated security message from Akariza</p>
+            <p style="color: #999; font-size: 12px;">© 2026 Akariza. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail(to, subject, html);
+  }
+
   async sendOtpEmail(to: string, fullName: string, otpCode: string) {
     const subject = 'Your Login Code';
     const html = `

@@ -13,7 +13,7 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  @ApiOperation({ summary: 'Login - Returns OTP requirement' })
+  @ApiOperation({ summary: 'Login - Returns access and refresh tokens' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -24,30 +24,10 @@ export class AuthController {
       }
     }
   })
-  @ApiResponse({ status: 200, description: 'OTP sent to email' })
+  @ApiResponse({ status: 200, description: 'Login successful, returns tokens' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
-  }
-
-  @Public()
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
-  @Post('verify-otp')
-  @ApiOperation({ summary: 'Verify OTP to complete login' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['email', 'otpCode'],
-      properties: {
-        email: { type: 'string', example: 'jeromeboitenge@gmail.com' },
-        otpCode: { type: 'string', example: '123456' }
-      }
-    }
-  })
-  @ApiResponse({ status: 200, description: 'Returns access and refresh tokens' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
-    return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otpCode);
   }
 
   @Public()

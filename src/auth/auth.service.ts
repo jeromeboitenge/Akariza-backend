@@ -115,39 +115,40 @@ export class AuthService {
         data: { failedLoginAttempts: 0, lockedUntil: null },
       });
 
-      // Generate OTP
-      const otpCode = this.generateOtp();
-      const otpExpiry = DateUtil.addMinutes(new Date(), SECURITY.OTP_EXPIRY_MINUTES);
+      // Generate tokens directly without OTP
+      const payload = { 
+        sub: user.id, 
+        organizationId: user.organizationId, 
+        branchId: user.branchId,
+        role: user.role, 
+        type: 'user' 
+      };
+      
+      const refreshToken = this.generateRefreshToken(payload);
 
+      // Save refresh token
       await this.prisma.user.update({
         where: { id: user.id },
-        data: { otpCode, otpExpiry },
+        data: { refreshToken },
       });
 
-      // Log OTP in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔐 OTP for', user.email, ':', otpCode);
-      }
-
-      // Send OTP email
-      try {
-        const result = await this.emailService.sendOtpEmail(user.email, user.fullName, otpCode);
-        if (!result.success) {
-          console.warn('⚠️ Email sending failed but continuing:', result.message);
-        }
-      } catch (error) {
-        console.error('Failed to send OTP email:', error);
-        // Don't throw - allow login to continue with OTP shown in logs
-      }
+      const userData = {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        organizationId: user.organizationId,
+        branchId: user.branchId,
+      };
 
       return {
-        message: 'OTP sent to your email',
-        requiresOtp: true,
-        userType: 'user',
+        user: userData,
+        accessToken: this.generateAccessToken(payload),
+        refreshToken,
       };
     }
 
-    // Try admin login - also requires OTP
+    // Try admin login
     const admin = await this.prisma.admin.findUnique({ where: { email } });
     if (admin && admin.isActive) {
       // Check if account is locked
@@ -187,35 +188,24 @@ export class AuthService {
         data: { failedLoginAttempts: 0, lockedUntil: null },
       });
 
-      // Generate OTP for admin too
-      const otpCode = this.generateOtp();
-      const otpExpiry = DateUtil.addMinutes(new Date(), SECURITY.OTP_EXPIRY_MINUTES);
+      // Generate tokens directly without OTP
+      const payload = { 
+        sub: admin.id, 
+        role: admin.role, 
+        type: 'admin' 
+      };
 
-      await this.prisma.admin.update({
-        where: { id: admin.id },
-        data: { otpCode, otpExpiry },
-      });
-
-      // Log OTP in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔐 OTP for', admin.email, ':', otpCode);
-      }
-
-      // Send OTP email
-      try {
-        const result = await this.emailService.sendOtpEmail(admin.email, admin.fullName, otpCode);
-        if (!result.success) {
-          console.warn('⚠️ Email sending failed but continuing:', result.message);
-        }
-      } catch (error) {
-        console.error('Failed to send OTP email:', error);
-        // Don't throw - allow login to continue with OTP shown in logs
-      }
+      const userData = {
+        id: admin.id,
+        email: admin.email,
+        fullName: admin.fullName,
+        role: admin.role,
+      };
 
       return {
-        message: 'OTP sent to your email',
-        requiresOtp: true,
-        userType: 'admin',
+        user: userData,
+        accessToken: this.generateAccessToken(payload),
+        refreshToken: this.generateRefreshToken(payload),
       };
     }
 

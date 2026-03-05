@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
+import { DateUtil } from '../common/date.util';
 
 @Injectable()
 export class UsersService {
@@ -133,7 +134,46 @@ export class UsersService {
     });
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async requestPasswordChangeOtp(userId: string) {
+    // Get user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, fullName: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Generate OTP
+    const otpCode = this.authService.generateOtp();
+    const otpExpiry = DateUtil.addMinutes(new Date(), 5);
+
+    // Save OTP
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { otpCode, otpExpiry },
+    });
+
+    // Log OTP in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Password Change OTP for', user.email, ':', otpCode);
+    }
+
+    // Send OTP email
+    try {
+      await this.emailService.sendPasswordChangeOtpEmail(user.email, user.fullName, otpCode);
+    } catch (error) {
+      console.error('Failed to send password change OTP email:', error);
+    }
+
+    return { 
+      message: 'OTP sent to your email',
+      otp: process.env.NODE_ENV === 'development' ? otpCode : undefined
+    };
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string, otpCode: string) {
     // Get user
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -147,6 +187,19 @@ export class UsersService {
     const isValid = await this.authService.comparePassword(currentPassword, user.password);
     if (!isValid) {
       throw new Error('Current password is incorrect');
+    }
+
+    // Verify OTP
+    if (!user.otpCode || !user.otpExpiry) {
+      throw new Error('No OTP found. Please request OTP first.');
+    }
+
+    if (new Date() > user.otpExpiry) {
+      throw new Error('OTP expired. Please request a new OTP.');
+    }
+
+    if (user.otpCode !== otpCode) {
+      throw new Error('Invalid OTP code');
     }
 
     // Validate new password strength
@@ -167,13 +220,15 @@ export class UsersService {
     // Hash new password
     const hashedPassword = await this.authService.hashPassword(newPassword);
 
-    // Update password and history
+    // Update password and history, clear OTP
     await this.prisma.user.update({
       where: { id: userId },
       data: {
         password: hashedPassword,
         passwordHistory: [...passwordHistory, hashedPassword].slice(-5), // Keep last 5
         lastPasswordChange: new Date(),
+        otpCode: null,
+        otpExpiry: null,
       },
     });
 

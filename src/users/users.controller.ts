@@ -65,18 +65,26 @@ export class UsersController {
     return this.service.deactivate(id, req.user.organizationId);
   }
 
+  @Post('request-password-change-otp')
+  @ApiOperation({ summary: 'Request OTP for password change' })
+  @ApiResponse({ status: 200, description: 'OTP sent to email' })
+  requestPasswordChangeOtp(@Request() req) {
+    return this.service.requestPasswordChangeOtp(req.user.id);
+  }
+
   @Patch('change-password')
-  @ApiOperation({ summary: 'Change own password' })
+  @ApiOperation({ summary: 'Change own password with OTP verification' })
   @ApiBody({
     schema: {
       example: {
         currentPassword: 'oldPassword123',
-        newPassword: 'newPassword456'
+        newPassword: 'newPassword456',
+        otpCode: '123456'
       }
     }
   })
   changePassword(@Body() data: any, @Request() req) {
-    return this.service.changePassword(req.user.id, data.currentPassword, data.newPassword);
+    return this.service.changePassword(req.user.id, data.currentPassword, data.newPassword, data.otpCode);
   }
 
   @Patch(':id/reset-password')
