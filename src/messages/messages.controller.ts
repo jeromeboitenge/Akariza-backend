@@ -36,14 +36,33 @@ export class MessagesController {
       }
     }
   })
-  create(@Body() data: any, @Request() req) {
-    return this.service.create(
-      data,
-      req.user.organizationId,
-      req.user.id,
-      req.user.role,
-      req.user.branchId
-    );
+  async create(@Body() data: any, @Request() req) {
+    try {
+      // Validate user data
+      if (!req.user || !req.user.id) {
+        throw new Error('User not authenticated');
+      }
+
+      if (!req.user.organizationId) {
+        throw new Error('User organization not found');
+      }
+
+      // Set default targetType if not provided
+      if (!data.targetType) {
+        data.targetType = 'USER';
+      }
+
+      return await this.service.create(
+        data,
+        req.user.organizationId,
+        req.user.id,
+        req.user.role,
+        req.user.branchId
+      );
+    } catch (error) {
+      console.error('❌ Message creation error:', error.message);
+      throw error;
+    }
   }
 
   @Get()

@@ -48,7 +48,21 @@ export class MessagesService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: any, organizationId: string, senderId: string, senderRole: string, senderBranchId: string) {
-    const { targetType, receiverId, receiverBranchId, message } = data;
+    const { targetType = 'USER', receiverId, receiverBranchId, message } = data;
+
+    // Validate message content
+    if (!message || message.trim().length === 0) {
+      throw new Error('Message content is required');
+    }
+
+    // Validate target
+    if (targetType === 'USER' && !receiverId) {
+      throw new Error('receiverId is required for direct messages');
+    }
+
+    if (targetType === 'BRANCH' && !receiverBranchId) {
+      throw new Error('receiverBranchId is required for branch messages');
+    }
 
     // Validate permissions based on role
     if (targetType === 'ALL_BRANCHES' && senderRole !== 'BOSS' && senderRole !== 'SYSTEM_ADMIN') {
@@ -58,9 +72,13 @@ export class MessagesService {
     // Handle ALL_BRANCHES: Create a message for each branch
     if (targetType === 'ALL_BRANCHES') {
       const branches = await this.prisma.branch.findMany({
-        where: { organizationId },
+        where: { organizationId, isActive: true },
         select: { id: true, name: true }
       });
+
+      if (branches.length === 0) {
+        throw new Error('No active branches found');
+      }
 
       const messages = await Promise.all(
         branches.map(branch =>
@@ -85,21 +103,55 @@ export class MessagesService {
       );
 
       console.log(`📨 Broadcast message created for ${branches.length} branches`);
-      return messages[0]; // Return first message as representative
+      return {
+        success: true,
+        message: `Message sent to ${branches.length} branches`,
+        data: messages[0]
+      };
     }
 
     if (targetType === 'BRANCH') {
+      // Verify branch exists and belongs to organization
+      const branch = await this.prisma.branch.findFirst({
+        where: { 
+          id: receiverBranchId,
+          organizationId,
+          isActive: true
+        },
+        include: { users: true }
+      });
+
+      if (!branch) {
+        throw new Error('Branch not found or inactive');
+      }
+
       // Manager can only message their own branches
       if (senderRole === 'MANAGER') {
-        const branch = await this.prisma.branch.findUnique({
-          where: { id: receiverBranchId },
-          include: { users: true }
-        });
-        
-        // Check if manager belongs to this branch
-        const managerInBranch = branch?.users.some(u => u.id === senderId);
+        const managerInBranch = branch.users.some(u => u.id === senderId);
         if (!managerInBranch) {
           throw new Error('Manager can only message their own branch');
+        }
+      }
+    }
+
+    // For direct messages, verify receiver exists
+    if (targetType === 'USER' && receiverId) {
+      const receiver = await this.prisma.user.findFirst({
+        where: {
+          id: receiverId,
+          organizationId,
+          isActive: true
+        }
+      });
+
+      if (!receiver) {
+        throw new Error('Receiver not found or inactive');
+      }
+
+      // Cashiers can only message users in their branch
+      if (senderRole === 'CASHIER') {
+        if (receiver.branchId !== senderBranchId) {
+          throw new Error('Cashiers can only message users in their branch');
         }
       }
     }
@@ -114,7 +166,6 @@ export class MessagesService {
         receiverBranchId: receiverBranchId || null,
         targetType,
         message,
-        // Non-repudiation: Timestamp and sender info stored automatically
       },
       include: {
         sender: { select: { id: true, fullName: true, role: true, email: true } },
@@ -133,7 +184,11 @@ export class MessagesService {
       nonRepudiation: 'ENABLED'
     });
 
-    return createdMessage;
+    return {
+      success: true,
+      message: 'Message sent successfully',
+      data: createdMessage
+    };
   }
 
   async findAll(organizationId: string, userId: string, userRole: string, userBranchId: string, limit: number = 50) {
