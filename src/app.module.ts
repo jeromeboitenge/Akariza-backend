@@ -31,6 +31,7 @@ import { MessagesModule } from './messages/messages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { EmailModule } from './email/email.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     EmailModule,
     DashboardModule,
+    UploadModule,
     OrganizationsModule,
     UsersModule,
     ProductsModule,
