@@ -59,7 +59,13 @@ export class ProductsService {
       });
 
       console.log('✅ Product created:', product.name, '(SKU:', product.sku, ')');
-      return product;
+      
+      // Serialize dates properly
+      return {
+        ...product,
+        createdAt: product.createdAt.toISOString(),
+        expirationDate: product.expirationDate ? product.expirationDate.toISOString() : null,
+      };
     } catch (error) {
       // Re-throw HTTP exceptions as-is
       if (error instanceof BadRequestException) {
@@ -81,11 +87,18 @@ export class ProductsService {
     }
   }
 
-  findAll(organizationId?: string) {
-    return this.prisma.product.findMany({ 
+  async findAll(organizationId?: string) {
+    const products = await this.prisma.product.findMany({ 
       where: organizationId ? { organizationId, isActive: true } : { isActive: true },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Serialize dates properly
+    return products.map(product => ({
+      ...product,
+      createdAt: product.createdAt.toISOString(),
+      expirationDate: product.expirationDate ? product.expirationDate.toISOString() : null,
+    }));
   }
 
   findByType(organizationId: string, type: string) {
