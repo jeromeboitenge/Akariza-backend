@@ -3,7 +3,9 @@ import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+  ) {}
 
   async create(data: any, organizationId: string, userId: string) {
     try {
@@ -45,26 +47,49 @@ export class ProductsService {
         throw new BadRequestException(`Product with SKU "${data.sku}" already exists in this organization`);
       }
 
-      // Create product
-      const product = await this.prisma.product.create({
-        data: { 
-          ...data, 
-          organizationId, 
-          createdById: userId,
-          currentStock: data.currentStock || 0,
-          minStockLevel: data.minStockLevel || 0,
-          maxStockLevel: data.maxStockLevel || 0,
-          reorderPoint: data.reorderPoint || 0,
-        },
+      // Create product with transaction to ensure data consistency
+      const result = await this.prisma.$transaction(async (tx) => {
+        const product = await tx.product.create({
+          data: { 
+            ...data, 
+            organizationId, 
+            createdById: userId,
+            currentStock: data.currentStock || 0,
+            minStockLevel: data.minStockLevel || 0,
+            maxStockLevel: data.maxStockLevel || 0,
+            reorderPoint: data.reorderPoint || 0,
+          },
+        });
+
+        // If product has initial stock, create a stock transaction
+        if (product.currentStock > 0) {
+          await tx.stockTransaction.create({
+            data: {
+              organizationId,
+              productId: product.id,
+              type: 'INITIAL_STOCK',
+              quantity: product.currentStock,
+              referenceType: 'Product Creation',
+              referenceId: product.id,
+              balanceAfter: product.currentStock,
+              notes: `Initial stock for ${product.name}`,
+              createdById: userId,
+            },
+          });
+
+          console.log(`📦 Initial stock transaction created: ${product.currentStock} units`);
+        }
+
+        return product;
       });
 
-      console.log('✅ Product created:', product.name, '(SKU:', product.sku, ')');
+      console.log('✅ Product created:', result.name, '(SKU:', result.sku, ')');
       
       // Serialize dates properly
       return {
-        ...product,
-        createdAt: product.createdAt.toISOString(),
-        expirationDate: product.expirationDate ? product.expirationDate.toISOString() : null,
+        ...result,
+        createdAt: result.createdAt.toISOString(),
+        expirationDate: result.expirationDate ? result.expirationDate.toISOString() : null,
       };
     } catch (error) {
       // Re-throw HTTP exceptions as-is
