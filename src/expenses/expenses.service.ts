@@ -36,13 +36,16 @@ export class ExpensesService {
       category = customCategoryName;
     }
     
+    // Remove customCategory from data as it's not a field in the Expense model
+    const { customCategory, ...expenseData } = data;
+    
     return this.prisma.expense.create({
       data: { 
-        ...data, 
+        ...expenseData, 
         category,
         organizationId, 
         createdById: userId, 
-        date: new Date(data.date) 
+        date: new Date(expenseData.date) 
       },
     });
   }
