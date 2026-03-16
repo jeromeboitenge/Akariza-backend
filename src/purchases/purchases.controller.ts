@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Request, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
+import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { Roles } from '../common/decorators';
 
 @ApiTags('Purchases')
@@ -12,24 +13,8 @@ export class PurchasesController {
 
   @Post()
   @ApiOperation({ summary: 'Create purchase' })
-  @ApiBody({
-    schema: {
-      example: {
-        supplierId: 'supplier-id',
-        items: [
-          {
-            productId: 'product-id',
-            quantity: 50,
-            costPrice: 18000
-          }
-        ],
-        paymentStatus: 'PAID',
-        amountPaid: 900000,
-        notes: 'Monthly stock replenishment'
-      }
-    }
-  })
-  create(@Body() data: any, @Request() req) {
+  @ApiBody({ type: CreatePurchaseDto })
+  create(@Body(ValidationPipe) data: CreatePurchaseDto, @Request() req) {
     return this.service.create(data, req.user.organizationId, req.user.id);
   }
 

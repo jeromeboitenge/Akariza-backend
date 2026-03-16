@@ -1,15 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { StockService } from '../stock/stock.service';
+import { CostManagementService } from '../products/cost-management.service';
 
 @Injectable()
 export class PurchasesService {
   constructor(
     private prisma: PrismaService,
     private stockService: StockService,
+    private costManagementService: CostManagementService,
   ) {}
 
   async create(data: any, organizationId: string, userId: string) {
+    // Validate required fields
+    if (!data.supplierId) {
+      throw new BadRequestException('Supplier is required. Please select a supplier for the purchase.');
+    }
+
+    if (!data.items || data.items.length === 0) {
+      throw new BadRequestException('At least one item is required for the purchase.');
+    }
+
+    // Validate that supplier exists and is active
+    const supplier = await this.prisma.supplier.findFirst({
+      where: { 
+        id: data.supplierId, 
+        organizationId,
+        isActive: true 
+      },
+    });
+
+    if (!supplier) {
+      throw new BadRequestException('Selected supplier not found or is inactive.');
+    }
+
     if (data.mobileRecordId) {
       const existing = await this.prisma.purchase.findFirst({
         where: { organizationId, mobileRecordId: data.mobileRecordId },
@@ -36,7 +60,7 @@ export class PurchasesService {
         include: { items: true },
       });
 
-      // Create items separately
+      // Create items and update stock
       for (const item of data.items) {
         await tx.purchaseItem.create({
           data: {
@@ -47,9 +71,8 @@ export class PurchasesService {
             total: item.quantity * item.costPrice,
           },
         });
-      }
 
-      for (const item of data.items) {
+        // Record stock transaction
         await this.stockService.recordTransaction(
           tx,
           organizationId,
@@ -60,6 +83,21 @@ export class PurchasesService {
           purchase.id,
           userId,
         );
+
+        // Update product cost based on new purchase
+        const costUpdate = await this.costManagementService.updateProductCostFromPurchase(
+          tx,
+          organizationId,
+          item.productId,
+          item.quantity,
+          item.costPrice,
+          userId,
+          purchase.id,
+        );
+
+        if (costUpdate.updated) {
+          console.log(`💰 Product cost updated: ${costUpdate.oldCost} → ${costUpdate.newCost} RWF (${costUpdate.difference > 0 ? '+' : ''}${costUpdate.difference.toFixed(2)})`);
+        }
       }
 
       return purchase;

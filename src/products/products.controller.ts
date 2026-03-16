@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
+import { CostManagementService } from './cost-management.service';
 import { Roles } from '../common/decorators';
 import { CreateProductDto } from '../common/dto/examples.dto';
 
@@ -9,7 +10,10 @@ import { CreateProductDto } from '../common/dto/examples.dto';
 @Controller('products')
 @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
 export class ProductsController {
-  constructor(private service: ProductsService) {}
+  constructor(
+    private service: ProductsService,
+    private costManagementService: CostManagementService,
+  ) {}
 
   @Post()
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
@@ -81,6 +85,18 @@ export class ProductsController {
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
+  }
+
+  @Get(':id/cost-history')
+  @ApiOperation({ summary: 'Get product cost change history' })
+  getCostHistory(@Param('id') id: string, @Request() req) {
+    return this.costManagementService.getProductCostHistory(req.user.organizationId, id);
+  }
+
+  @Get(':id/cost-statistics')
+  @ApiOperation({ summary: 'Get product cost statistics and analysis' })
+  getCostStatistics(@Param('id') id: string, @Request() req) {
+    return this.costManagementService.getProductCostStatistics(req.user.organizationId, id);
   }
 
   @Delete(':id')

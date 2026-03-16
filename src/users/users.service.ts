@@ -13,6 +13,27 @@ export class UsersService {
   ) {}
 
   async create(data: any, organizationId: string, creatorId: string) {
+    // Get creator info to check role and branch
+    const creator = await this.prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { role: true, branchId: true }
+    });
+
+    if (!creator) {
+      throw new Error('Creator user not found');
+    }
+
+    // MANAGER can only create users for their own branch
+    if (creator.role === 'MANAGER') {
+      if (!data.branchId || data.branchId !== creator.branchId) {
+        throw new Error('Managers can only create users for their own branch');
+      }
+      // MANAGER can only create CASHIER role
+      if (data.role && data.role !== 'CASHIER') {
+        throw new Error('Managers can only create CASHIER users');
+      }
+    }
+
     // Check if email already exists
     const existingUser = await this.prisma.user.findFirst({
       where: { email: data.email }
@@ -35,7 +56,7 @@ export class UsersService {
         email: data.email,
         password: hashedPassword,
         fullName: data.fullName,
-        role: data.role,
+        role: data.role || 'CASHIER',
         createdById: creatorId,
         passwordHistory: [hashedPassword],
       },
