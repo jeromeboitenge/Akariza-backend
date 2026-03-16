@@ -142,10 +142,15 @@ export class ExpensesController {
 
   @Get('summary')
   @ApiOperation({ summary: 'Get expenses summary' })
-  @ApiQuery({ name: 'startDate', required: true, example: '2026-02-01' })
-  @ApiQuery({ name: 'endDate', required: true, example: '2026-02-28' })
-  getSummary(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Request() req) {
-    return this.service.getSummary(req.user.organizationId, new Date(startDate), new Date(endDate));
+  @ApiQuery({ name: 'startDate', required: false, example: '2026-02-01', description: 'Start date (defaults to start of current month)' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2026-02-28', description: 'End date (defaults to end of current month)' })
+  getSummary(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string, @Request() req) {
+    // Default to current month if dates not provided
+    const now = new Date();
+    const defaultStartDate = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const defaultEndDate = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    return this.service.getSummary(req.user.organizationId, defaultStartDate, defaultEndDate);
   }
 
   @Get(':id')

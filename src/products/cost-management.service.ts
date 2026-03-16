@@ -12,6 +12,7 @@ export class CostManagementService {
   /**
    * Calculate and update product cost based on purchase history
    * Uses weighted average cost method (AVCO)
+   * The product's costPrice field will be updated to reflect the new average cost
    */
   async updateProductCostFromPurchase(
     tx: any, // Prisma transaction
@@ -31,16 +32,16 @@ export class CostManagementService {
       throw new Error(`Product not found: ${productId}`);
     }
 
-    const currentCost = product.costPrice;
+    const currentCost = product.costPrice; // This is the current average cost
     const currentStock = product.currentStock;
 
-    // Calculate new average cost using weighted average method
-    // Formula: ((Current Stock × Current Cost) + (New Quantity × New Cost)) / (Current Stock + New Quantity)
+    // Calculate new weighted average cost
+    // Formula: ((Current Stock × Current Average Cost) + (New Quantity × New Purchase Cost)) / (Current Stock + New Quantity)
     const totalCurrentValue = currentStock * currentCost;
     const newPurchaseValue = newPurchaseQuantity * newPurchaseCost;
     const totalQuantity = currentStock + newPurchaseQuantity;
     
-    let newAverageCost = currentCost; // Default to current cost
+    let newAverageCost = currentCost; // Default to current average cost
     
     if (totalQuantity > 0) {
       newAverageCost = (totalCurrentValue + newPurchaseValue) / totalQuantity;
@@ -54,10 +55,10 @@ export class CostManagementService {
     const significantChange = costDifference >= 1;
 
     if (significantChange) {
-      // Update product cost
+      // Update product's cost price with the new average cost
       await tx.product.update({
         where: { id: productId },
-        data: { costPrice: newAverageCost },
+        data: { costPrice: newAverageCost }, // costPrice now equals the new average cost
       });
 
       // Log the cost change
@@ -74,7 +75,7 @@ export class CostManagementService {
         purchaseId,
       );
 
-      console.log(`📊 Cost updated for ${product.name}: ${currentCost} → ${newAverageCost} RWF`);
+      console.log(`📊 Average cost updated for ${product.name}: ${currentCost} → ${newAverageCost} RWF (Product cost price updated)`);
       
       return {
         updated: true,
@@ -124,7 +125,8 @@ export class CostManagementService {
       },
       calculation: {
         method: 'WEIGHTED_AVERAGE',
-        description: 'Cost updated using weighted average cost method based on purchase history',
+        description: 'Product cost price updated using weighted average cost method. The cost price now reflects the average cost of all inventory.',
+        formula: '((Current Stock × Current Cost) + (New Quantity × New Cost)) / Total Quantity',
       },
       timestamp: new Date().toISOString(),
     };
@@ -164,6 +166,7 @@ export class CostManagementService {
 
   /**
    * Calculate cost statistics for a product
+   * Note: The product's costPrice field represents the current weighted average cost
    */
   async getProductCostStatistics(organizationId: string, productId: string) {
     // Get recent purchase items for this product
@@ -185,6 +188,12 @@ export class CostManagementService {
       return null;
     }
 
+    // Get current product to show current average cost
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, organizationId },
+      select: { costPrice: true, name: true },
+    });
+
     const costs = recentPurchases.map(p => p.costPrice);
     const minCost = Math.min(...costs);
     const maxCost = Math.max(...costs);
@@ -192,9 +201,10 @@ export class CostManagementService {
 
     return {
       recentPurchases: recentPurchases.length,
+      currentAverageCost: product?.costPrice || 0, // This is the actual average cost used by the system
+      purchaseAvgCost: Math.round(avgCost * 100) / 100, // Average of recent purchase costs
       minCost: Math.round(minCost * 100) / 100,
       maxCost: Math.round(maxCost * 100) / 100,
-      avgCost: Math.round(avgCost * 100) / 100,
       costVariation: Math.round((maxCost - minCost) * 100) / 100,
       lastPurchase: recentPurchases[0],
     };
