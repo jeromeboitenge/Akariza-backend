@@ -25,7 +25,7 @@ export class SuppliersController {
     }
   })
   create(@Body() data: any, @Request() req) {
-    return this.service.create(data, req.user.organizationId);
+    return this.service.create(data, req.user.organizationId, req.user.id);
   }
 
   @Get()

@@ -6,7 +6,7 @@ import { CreateSupplierDto, UpdateSupplierDto } from './dto/supplier.dto';
 export class SuppliersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(organizationId: string, createSupplierDto: CreateSupplierDto) {
+  async create(createSupplierDto: CreateSupplierDto, organizationId: string, userId: string) {
     try {
       // Check if supplier with same email or phone already exists
       const existingSupplier = await this.prisma.supplier.findFirst({
@@ -28,17 +28,18 @@ export class SuppliersService {
           name: createSupplierDto.name,
           contactPerson: createSupplierDto.contactPerson,
           phone: createSupplierDto.phone,
-          email: createSupplierDto.email,
+          email: createSupplierDto.email || '',
           address: createSupplierDto.address,
-          paymentTerms: createSupplierDto.paymentTerms,
-          // Note: notes field needs to be added to Supplier model
-          // notes: createSupplierDto.notes,
-          organizationId,
+          paymentTerms: createSupplierDto.paymentTerms || '',
           rating: createSupplierDto.rating || 5.0,
           creditLimit: createSupplierDto.creditLimit || 0,
-          // Note: currentBalance field needs to be added to Supplier model
-          // currentBalance: 0,
           isActive: true,
+          organization: {
+            connect: { id: organizationId }
+          },
+          createdBy: {
+            connect: { id: userId }
+          }
         },
       });
 
