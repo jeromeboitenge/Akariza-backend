@@ -49,10 +49,17 @@ export class ExpensesService {
       },
     });
 
-    // Return with properly serialized dates
+    // Force proper date serialization - return explicit object
     return {
-      ...expense,
+      id: expense.id,
+      organizationId: expense.organizationId,
+      category: expense.category,
+      amount: expense.amount,
+      description: expense.description,
       date: expense.date ? expense.date.toISOString() : null,
+      paymentMethod: expense.paymentMethod,
+      receiptUrl: expense.receiptUrl,
+      createdById: expense.createdById,
       createdAt: expense.createdAt ? expense.createdAt.toISOString() : null,
     };
   }
@@ -92,23 +99,19 @@ export class ExpensesService {
         ...(startDate && endDate && { date: { gte: startDate, lte: endDate } }),
       },
       orderBy: { date: 'desc' },
-      select: {
-        id: true,
-        category: true,
-        amount: true,
-        description: true,
-        date: true,
-        paymentMethod: true,
-        receiptUrl: true,
-        createdAt: true,
-        createdById: true,
-      },
     });
 
-    // Ensure dates are properly serialized as ISO strings
+    // Force proper date serialization - ensure dates are ISO strings
     return expenses.map(expense => ({
-      ...expense,
+      id: expense.id,
+      organizationId: expense.organizationId,
+      category: expense.category,
+      amount: expense.amount,
+      description: expense.description,
       date: expense.date ? expense.date.toISOString() : null,
+      paymentMethod: expense.paymentMethod,
+      receiptUrl: expense.receiptUrl,
+      createdById: expense.createdById,
       createdAt: expense.createdAt ? expense.createdAt.toISOString() : null,
     }));
   }
