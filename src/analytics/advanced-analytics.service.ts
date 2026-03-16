@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
 export class AdvancedAnalyticsService {
@@ -241,31 +241,48 @@ export class AdvancedAnalyticsService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const cashierSales = await this.prisma.sale.groupBy({
-        by: ['createdBy'],
+      // Simplified query to avoid TypeScript circular reference issues
+      const sales = await this.prisma.sale.findMany({
         where: {
           organizationId,
           createdAt: { gte: startDate },
-          createdBy: { not: null },
+          createdById: { not: null },
         },
-        _sum: {
+        select: {
+          createdById: true,
           finalAmount: true,
-        },
-        _count: {
           id: true,
         },
       });
+
+      // Group by createdById manually
+      const cashierSalesMap = new Map();
+      sales.forEach(sale => {
+        const cashierId = sale.createdById;
+        if (!cashierSalesMap.has(cashierId)) {
+          cashierSalesMap.set(cashierId, {
+            createdBy: cashierId,
+            _sum: { finalAmount: 0 },
+            _count: { id: 0 },
+          });
+        }
+        const existing = cashierSalesMap.get(cashierId);
+        existing._sum.finalAmount += sale.finalAmount || 0;
+        existing._count.id += 1;
+      });
+
+      const cashierSales = Array.from(cashierSalesMap.values());
 
       const cashiersWithDetails = await Promise.all(
         cashierSales.map(async (item) => {
           const user = await this.prisma.user.findUnique({
             where: { id: item.createdBy! },
-            select: { name: true, email: true, role: true },
+            select: { email: true, role: true },
           });
 
           return {
             userId: item.createdBy,
-            userName: user?.name || 'Unknown',
+            userName: user?.email || 'Unknown',
             userRole: user?.role || 'UNKNOWN',
             totalSales: item._sum.finalAmount || 0,
             transactionCount: item._count.id,

@@ -10,20 +10,6 @@ async function bootstrap() {
   
   const app = await NestFactory.create(AppModule);
   
-  // Fix JSON serialization for Date objects
-  app.use((req, res, next) => {
-    const originalJson = res.json;
-    res.json = function(obj) {
-      return originalJson.call(this, JSON.parse(JSON.stringify(obj, (key, value) => {
-        if (value instanceof Date) {
-          return value.toISOString();
-        }
-        return value;
-      })));
-    };
-    next();
-  });
-  
   // CORS - restrict in production
   app.enableCors({
     origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? false : '*'),

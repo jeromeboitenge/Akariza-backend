@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
 export class NotificationsService {
@@ -22,7 +22,7 @@ export class NotificationsService {
           title: data.title,
           message: data.message,
           data: data.data || {},
-          read: false,
+          isRead: false,
         },
       });
 
@@ -144,7 +144,7 @@ export class NotificationsService {
     return this.prisma.notification.findMany({
       where: {
         userId,
-        ...(unreadOnly && { read: false }),
+        ...(unreadOnly && { isRead: false }),
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -155,7 +155,7 @@ export class NotificationsService {
     return this.prisma.notification.count({
       where: {
         userId,
-        read: false,
+        isRead: false,
       },
     });
   }
@@ -166,7 +166,7 @@ export class NotificationsService {
         id: notificationId,
         userId,
       },
-      data: { read: true },
+      data: { isRead: true },
     });
   }
 
@@ -174,9 +174,9 @@ export class NotificationsService {
     return this.prisma.notification.updateMany({
       where: {
         userId,
-        read: false,
+        isRead: false,
       },
-      data: { read: true },
+      data: { isRead: true },
     });
   }
 

@@ -144,7 +144,7 @@ export class ExpensesController {
   @ApiOperation({ summary: 'Get expenses summary' })
   @ApiQuery({ name: 'startDate', required: false, example: '2026-02-01', description: 'Start date (defaults to start of current month)' })
   @ApiQuery({ name: 'endDate', required: false, example: '2026-02-28', description: 'End date (defaults to end of current month)' })
-  getSummary(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string, @Request() req) {
+  getSummary(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Request() req) {
     // Default to current month if dates not provided
     const now = new Date();
     const defaultStartDate = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);

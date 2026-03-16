@@ -158,7 +158,7 @@ export class CostManagementService {
       take: 50, // Last 50 cost changes
       include: {
         user: {
-          select: { name: true, email: true },
+          select: { email: true },
         },
       },
     });
@@ -175,7 +175,7 @@ export class CostManagementService {
         productId,
         purchase: { organizationId },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'desc' },
       take: 10, // Last 10 purchases
       include: {
         purchase: {

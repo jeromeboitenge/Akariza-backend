@@ -49,18 +49,25 @@ export class ExpensesService {
       },
     });
 
-    // Force proper date serialization - return explicit object
+    // Convert to plain object with proper date serialization
+    const plainExpense = JSON.parse(JSON.stringify(expense, (key, value) => {
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      return value;
+    }));
+    
     return {
-      id: expense.id,
-      organizationId: expense.organizationId,
-      category: expense.category,
-      amount: expense.amount,
-      description: expense.description,
-      date: expense.date ? expense.date.toISOString() : null,
-      paymentMethod: expense.paymentMethod,
-      receiptUrl: expense.receiptUrl,
-      createdById: expense.createdById,
-      createdAt: expense.createdAt ? expense.createdAt.toISOString() : null,
+      id: plainExpense.id,
+      organizationId: plainExpense.organizationId,
+      category: plainExpense.category,
+      amount: plainExpense.amount,
+      description: plainExpense.description,
+      date: plainExpense.date,
+      paymentMethod: plainExpense.paymentMethod,
+      receiptUrl: plainExpense.receiptUrl,
+      createdById: plainExpense.createdById,
+      createdAt: plainExpense.createdAt,
     };
   }
 
@@ -101,19 +108,28 @@ export class ExpensesService {
       orderBy: { date: 'desc' },
     });
 
-    // Force proper date serialization - ensure dates are ISO strings
-    return expenses.map(expense => ({
-      id: expense.id,
-      organizationId: expense.organizationId,
-      category: expense.category,
-      amount: expense.amount,
-      description: expense.description,
-      date: expense.date ? expense.date.toISOString() : null,
-      paymentMethod: expense.paymentMethod,
-      receiptUrl: expense.receiptUrl,
-      createdById: expense.createdById,
-      createdAt: expense.createdAt ? expense.createdAt.toISOString() : null,
-    }));
+    // Convert to plain objects with proper date serialization
+    return expenses.map(expense => {
+      const plainExpense = JSON.parse(JSON.stringify(expense, (key, value) => {
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        return value;
+      }));
+      
+      return {
+        id: plainExpense.id,
+        organizationId: plainExpense.organizationId,
+        category: plainExpense.category,
+        amount: plainExpense.amount,
+        description: plainExpense.description,
+        date: plainExpense.date,
+        paymentMethod: plainExpense.paymentMethod,
+        receiptUrl: plainExpense.receiptUrl,
+        createdById: plainExpense.createdById,
+        createdAt: plainExpense.createdAt,
+      };
+    });
   }
 
   findOne(id: string) {

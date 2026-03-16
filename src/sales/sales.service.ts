@@ -155,12 +155,13 @@ export class SalesService {
         select: { fullName: true },
       });
       
-      await this.notificationsService.notifyNewSale(
-        createdSale.id,
-        organizationId,
-        createdSale.finalAmount,
-        cashier?.fullName || 'Unknown'
-      ).catch(err => console.error('Notification failed:', err));
+      // TODO: Implement notification when notifications service is complete
+      // await this.notificationsService.notifyNewSale(
+      //   createdSale.id,
+      //   organizationId,
+      //   createdSale.finalAmount,
+      //   cashier?.fullName || 'Unknown'
+      // ).catch(err => console.error('Notification failed:', err));
     }
 
     // Generate all affected reports asynchronously
