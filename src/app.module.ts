@@ -9,6 +9,7 @@ import { RolesGuard } from './common/roles.guard';
 import { SecurityHeadersMiddleware } from './common/security-headers.middleware';
 import { InputSanitizationMiddleware } from './common/input-sanitization.middleware';
 import { SanitizeResponseInterceptor } from './common/sanitize-response.interceptor';
+import { DateSerializationInterceptor } from './common/date-serialization.interceptor';
 import { GlobalExceptionFilter } from './common/global-exception.filter';
 import { HealthController } from './health.controller';
 import { OrganizationsModule } from './organizations/organizations.module';
@@ -74,6 +75,7 @@ import { UploadModule } from './upload/upload.module';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: DateSerializationInterceptor },
     { provide: APP_INTERCEPTOR, useClass: SanitizeResponseInterceptor },
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
   ],

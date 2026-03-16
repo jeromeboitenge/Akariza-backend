@@ -39,7 +39,7 @@ export class ExpensesService {
     // Remove customCategory from data as it's not a field in the Expense model
     const { customCategory, ...expenseData } = data;
     
-    return this.prisma.expense.create({
+    const expense = await this.prisma.expense.create({
       data: { 
         ...expenseData, 
         category,
@@ -48,6 +48,13 @@ export class ExpensesService {
         date: new Date(expenseData.date) 
       },
     });
+
+    // Return with properly serialized dates
+    return {
+      ...expense,
+      date: expense.date ? expense.date.toISOString() : null,
+      createdAt: expense.createdAt ? expense.createdAt.toISOString() : null,
+    };
   }
 
   async getCategories(organizationId: string) {
@@ -78,14 +85,32 @@ export class ExpensesService {
     };
   }
 
-  findAll(organizationId: string, startDate?: Date, endDate?: Date) {
-    return this.prisma.expense.findMany({
+  async findAll(organizationId: string, startDate?: Date, endDate?: Date) {
+    const expenses = await this.prisma.expense.findMany({
       where: {
         organizationId,
         ...(startDate && endDate && { date: { gte: startDate, lte: endDate } }),
       },
       orderBy: { date: 'desc' },
+      select: {
+        id: true,
+        category: true,
+        amount: true,
+        description: true,
+        date: true,
+        paymentMethod: true,
+        receiptUrl: true,
+        createdAt: true,
+        createdById: true,
+      },
     });
+
+    // Ensure dates are properly serialized as ISO strings
+    return expenses.map(expense => ({
+      ...expense,
+      date: expense.date ? expense.date.toISOString() : null,
+      createdAt: expense.createdAt ? expense.createdAt.toISOString() : null,
+    }));
   }
 
   findOne(id: string) {
