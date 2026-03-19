@@ -12,6 +12,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let message = 'Internal server error';
     let error = 'Internal Server Error';
 
+    console.log('🚨 Exception caught:', {
+      type: exception?.constructor?.name,
+      message: exception instanceof Error ? exception.message : 'Unknown error',
+      path: request.url,
+      method: request.method,
+      body: request.body
+    });
+
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
@@ -22,6 +30,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       } else if (typeof exceptionResponse === 'object') {
         message = (exceptionResponse as any).message || exception.message;
         error = (exceptionResponse as any).error || exception.name;
+        
+        // Handle validation errors specifically
+        if ((exceptionResponse as any).message && Array.isArray((exceptionResponse as any).message)) {
+          message = (exceptionResponse as any).message.join(', ');
+        }
       }
     } else if (exception instanceof Error) {
       // Handle regular Error objects
@@ -30,10 +43,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error = 'Bad Request';
       
       // Log the full error for debugging
-      console.error('❌ Error:', {
+      console.error('❌ Error details:', {
         message: exception.message,
         stack: exception.stack,
-        path: request.url
+        path: request.url,
+        method: request.method
       });
     } else {
       // Unknown error type
@@ -42,12 +56,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Send detailed error response
-    response.status(status).json({
+    const errorResponse = {
       statusCode: status,
       message,
       error,
       timestamp: new Date().toISOString(),
       path: request.url,
-    });
+    };
+
+    console.log('📤 Sending error response:', errorResponse);
+
+    response.status(status).json(errorResponse);
   }
 }

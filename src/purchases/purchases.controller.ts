@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Request, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
@@ -14,8 +14,20 @@ export class PurchasesController {
   @Post()
   @ApiOperation({ summary: 'Create purchase' })
   @ApiBody({ type: CreatePurchaseDto })
-  create(@Body(new ValidationPipe({ transform: true, whitelist: true })) data: CreatePurchaseDto, @Request() req) {
-    return this.service.create(data, req.user.organizationId, req.user.id);
+  async create(@Body() data: CreatePurchaseDto, @Request() req) {
+    console.log('🎯 Purchase controller hit:', {
+      user: req.user?.id,
+      organizationId: req.user?.organizationId,
+      bodyKeys: Object.keys(data || {}),
+      itemsCount: data?.items?.length || 0
+    });
+    
+    try {
+      return await this.service.create(data, req.user.organizationId, req.user.id);
+    } catch (error) {
+      console.error('❌ Controller error:', error);
+      throw error;
+    }
   }
 
   @Get()

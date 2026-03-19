@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { EnvironmentValidator } from './common/environment.validator';
@@ -25,7 +25,11 @@ async function bootstrap() {
     whitelist: true, 
     transform: true,
     forbidNonWhitelisted: true,
-    disableErrorMessages: process.env.NODE_ENV === 'production',
+    disableErrorMessages: false, // Enable error messages for debugging
+    exceptionFactory: (errors) => {
+      console.log('🚨 Validation errors:', errors);
+      return new BadRequestException(errors);
+    }
   }));
 
   // Swagger Configuration

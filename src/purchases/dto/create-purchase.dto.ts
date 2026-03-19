@@ -53,6 +53,18 @@ export class CreatePurchaseDto {
   @IsNumber()
   amountPaid?: number;
 
+  @ApiProperty({ example: 5000, required: false, description: 'Discount amount' })
+  @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : 0)
+  @IsNumber()
+  discount?: number;
+
+  @ApiProperty({ example: 2000, required: false, description: 'Tax amount' })
+  @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : 0)
+  @IsNumber()
+  tax?: number;
+
   @ApiProperty({ example: 'Monthly stock replenishment', required: false })
   @IsOptional()
   @IsString()
