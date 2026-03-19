@@ -99,6 +99,24 @@ export class ProductsController {
     return this.costManagementService.getProductCostStatistics(req.user.organizationId, id);
   }
 
+  @Post(':id/adjust-stock')
+  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @ApiOperation({ summary: 'Adjust product stock' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        adjustmentType: { type: 'string', enum: ['increase', 'decrease', 'set'] },
+        quantity: { type: 'number' },
+        newStock: { type: 'number' },
+        reason: { type: 'string' }
+      }
+    }
+  })
+  adjustStock(@Param('id') id: string, @Body() data: any, @Request() req) {
+    return this.service.adjustStock(id, req.user.organizationId, req.user.id, data);
+  }
+
   @Delete(':id')
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
   deactivate(@Param('id') id: string) {

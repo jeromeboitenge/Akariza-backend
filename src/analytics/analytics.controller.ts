@@ -82,4 +82,40 @@ export class AnalyticsController {
       new Date(endDate)
     );
   }
+
+  @Get('product-performance')
+  @ApiOperation({ summary: 'Get product performance analytics' })
+  @ApiQuery({ name: 'days', required: false, example: 30 })
+  getProductPerformance(@Query('days') days: string, @Request() req) {
+    return this.service.getProductPerformance(
+      req.user.organizationId,
+      days ? parseInt(days) : 30
+    );
+  }
+
+  @Get('customer-analytics')
+  @ApiOperation({ summary: 'Get customer analytics' })
+  @ApiQuery({ name: 'days', required: false, example: 30 })
+  getCustomerAnalytics(@Query('days') days: string, @Request() req) {
+    return this.service.getCustomerAnalytics(
+      req.user.organizationId,
+      days ? parseInt(days) : 30
+    );
+  }
+
+  @Get('inventory-analytics')
+  @ApiOperation({ summary: 'Get inventory analytics' })
+  getInventoryAnalytics(@Request() req) {
+    return this.service.getInventoryAnalytics(req.user.organizationId);
+  }
+
+  @Get('profit-analysis')
+  @ApiOperation({ summary: 'Get profit analysis' })
+  @ApiQuery({ name: 'days', required: false, example: 30 })
+  getProfitAnalysis(@Query('days') days: string, @Request() req) {
+    return this.service.getProfitAnalysis(
+      req.user.organizationId,
+      days ? parseInt(days) : 30
+    );
+  }
 }

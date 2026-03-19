@@ -73,4 +73,14 @@ export class PurchaseOrdersService {
       },
     });
   }
+
+  async updateStatus(id: string, status: string, userId: string) {
+    return this.prisma.purchaseOrder.update({
+      where: { id },
+      data: { 
+        status,
+        ...(status === 'APPROVED' && { approvedById: userId }),
+      },
+    });
+  }
 }

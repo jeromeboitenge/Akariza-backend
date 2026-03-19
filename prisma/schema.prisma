@@ -154,7 +154,7 @@ model Purchase {
   organizationId    String
   branchId          String?
   purchaseNumber    String
-  supplierId        String
+  supplierId        String?
   totalAmount       Float
   discount          Float    @default(0)
   tax               Float    @default(0)
@@ -170,7 +170,7 @@ model Purchase {
 
   organization Organization   @relation(fields: [organizationId], references: [id])
   branch       Branch?        @relation(fields: [branchId], references: [id])
-  supplier     Supplier       @relation(fields: [supplierId], references: [id])
+  supplier     Supplier?      @relation(fields: [supplierId], references: [id])
   createdBy    User           @relation("PurchaseCreator", fields: [createdById], references: [id])
   items        PurchaseItem[]
 

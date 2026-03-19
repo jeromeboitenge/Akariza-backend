@@ -536,4 +536,195 @@ export class AnalyticsService {
       },
     });
   }
+
+  async getProductPerformance(organizationId: string, days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const productSales = await this.prisma.saleItem.groupBy({
+      by: ['productId'],
+      where: {
+        sale: {
+          organizationId,
+          createdAt: { gte: startDate },
+        },
+      },
+      _sum: {
+        quantity: true,
+        total: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const productsWithDetails = await Promise.all(
+      productSales.map(async (item) => {
+        const product = await this.prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { name: true, category: true, sellingPrice: true, costPrice: true },
+        });
+
+        const profit = (product?.sellingPrice - product?.costPrice) * (item._sum.quantity || 0);
+
+        return {
+          productId: item.productId,
+          productName: product?.name || 'Unknown',
+          category: product?.category || 'Unknown',
+          quantitySold: item._sum.quantity || 0,
+          totalRevenue: item._sum.total || 0,
+          totalProfit: profit,
+          transactionCount: item._count.id,
+          averageOrderValue: (item._sum.total || 0) / (item._count.id || 1),
+        };
+      })
+    );
+
+    return productsWithDetails.sort((a, b) => b.totalRevenue - a.totalRevenue);
+  }
+
+  async getCustomerAnalytics(organizationId: string, days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const customerSales = await this.prisma.sale.groupBy({
+      by: ['customerId'],
+      where: {
+        organizationId,
+        createdAt: { gte: startDate },
+        customerId: { not: null },
+      },
+      _sum: {
+        totalAmount: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const customersWithDetails = await Promise.all(
+      customerSales.map(async (item) => {
+        const customer = await this.prisma.customer.findUnique({
+          where: { id: item.customerId },
+          select: { name: true, customerType: true, loyaltyPoints: true },
+        });
+
+        return {
+          customerId: item.customerId,
+          customerName: customer?.name || 'Unknown',
+          customerType: customer?.customerType || 'REGULAR',
+          totalSpent: item._sum.totalAmount || 0,
+          transactionCount: item._count.id,
+          averageOrderValue: (item._sum.totalAmount || 0) / (item._count.id || 1),
+          loyaltyPoints: customer?.loyaltyPoints || 0,
+        };
+      })
+    );
+
+    return customersWithDetails.sort((a, b) => b.totalSpent - a.totalSpent);
+  }
+
+  async getInventoryAnalytics(organizationId: string) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        currentStock: true,
+        minStockLevel: true,
+        costPrice: true,
+        sellingPrice: true,
+      },
+    });
+
+    const totalProducts = products.length;
+    const totalValue = products.reduce((sum, p) => sum + (p.currentStock * p.costPrice), 0);
+    
+    const lowStockCount = products.filter(p => p.currentStock <= p.minStockLevel && p.currentStock > 0).length;
+    const outOfStockCount = products.filter(p => p.currentStock === 0).length;
+    const overstockedCount = products.filter(p => p.currentStock > (p.minStockLevel * 3)).length;
+    const healthyCount = totalProducts - lowStockCount - outOfStockCount - overstockedCount;
+
+    return {
+      totalProducts,
+      totalValue,
+      lowStockCount,
+      outOfStockCount,
+      overstockedCount,
+      stockStatus: {
+        healthy: healthyCount,
+        lowStock: lowStockCount,
+        outOfStock: outOfStockCount,
+        overstocked: overstockedCount,
+      },
+    };
+  }
+
+  async getProfitAnalysis(organizationId: string, days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const sales = await this.prisma.saleItem.findMany({
+      where: {
+        sale: {
+          organizationId,
+          createdAt: { gte: startDate },
+        },
+      },
+      include: {
+        product: {
+          select: {
+            name: true,
+            category: true,
+            costPrice: true,
+            sellingPrice: true,
+          },
+        },
+      },
+    });
+
+    const totalRevenue = sales.reduce((sum, item) => sum + item.total, 0);
+    const totalCost = sales.reduce((sum, item) => sum + (item.product.costPrice * item.quantity), 0);
+    const totalProfit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+    // Group by category
+    const categoryMap = new Map();
+    sales.forEach(item => {
+      const category = item.product.category;
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, { category, revenue: 0, cost: 0, profit: 0 });
+      }
+      const cat = categoryMap.get(category);
+      cat.revenue += item.total;
+      cat.cost += item.product.costPrice * item.quantity;
+      cat.profit = cat.revenue - cat.cost;
+    });
+
+    // Group by product
+    const productMap = new Map();
+    sales.forEach(item => {
+      const productName = item.product.name;
+      if (!productMap.has(productName)) {
+        productMap.set(productName, { productName, revenue: 0, cost: 0, profit: 0, quantity: 0 });
+      }
+      const prod = productMap.get(productName);
+      prod.revenue += item.total;
+      prod.cost += item.product.costPrice * item.quantity;
+      prod.profit = prod.revenue - prod.cost;
+      prod.quantity += item.quantity;
+    });
+
+    return {
+      totalRevenue,
+      totalCost,
+      totalProfit,
+      profitMargin,
+      profitByCategory: Array.from(categoryMap.values()).sort((a, b) => b.profit - a.profit),
+      profitByProduct: Array.from(productMap.values()).sort((a, b) => b.profit - a.profit),
+    };
+  }
 }

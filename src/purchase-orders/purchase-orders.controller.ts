@@ -62,4 +62,18 @@ export class PurchaseOrdersController {
   convertToPurchase(@Param('id') id: string, @Request() req) {
     return this.service.convertToPurchase(id, req.user.id);
   }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update purchase order status' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['PENDING', 'APPROVED', 'ORDERED', 'RECEIVED', 'CANCELLED'] }
+      }
+    }
+  })
+  updateStatus(@Param('id') id: string, @Body() data: { status: string }, @Request() req) {
+    return this.service.updateStatus(id, data.status, req.user.id);
+  }
 }

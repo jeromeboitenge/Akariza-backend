@@ -20,11 +20,12 @@ class PurchaseItemDto {
 export class CreatePurchaseDto {
   @ApiProperty({ 
     example: 'supplier-id-here',
-    description: 'Supplier ID is mandatory for all purchases'
+    description: 'Supplier ID is optional for purchases',
+    required: false
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Supplier is required. Please select a supplier for the purchase.' })
-  supplierId: string;
+  supplierId?: string;
 
   @ApiProperty({ 
     type: [PurchaseItemDto],

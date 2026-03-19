@@ -13,25 +13,23 @@ export class PurchasesService {
 
   async create(data: any, organizationId: string, userId: string) {
     // Validate required fields
-    if (!data.supplierId) {
-      throw new BadRequestException('Supplier is required. Please select a supplier for the purchase.');
-    }
-
     if (!data.items || data.items.length === 0) {
       throw new BadRequestException('At least one item is required for the purchase.');
     }
 
-    // Validate that supplier exists and is active
-    const supplier = await this.prisma.supplier.findFirst({
-      where: { 
-        id: data.supplierId, 
-        organizationId,
-        isActive: true 
-      },
-    });
+    // Validate supplier if provided
+    if (data.supplierId) {
+      const supplier = await this.prisma.supplier.findFirst({
+        where: { 
+          id: data.supplierId, 
+          organizationId,
+          isActive: true 
+        },
+      });
 
-    if (!supplier) {
-      throw new BadRequestException('Selected supplier not found or is inactive.');
+      if (!supplier) {
+        throw new BadRequestException('Selected supplier not found or is inactive.');
+      }
     }
 
     if (data.mobileRecordId) {
@@ -43,20 +41,22 @@ export class PurchasesService {
 
     return this.prisma.$transaction(async (tx) => {
       const totalAmount = data.items.reduce((sum, item) => sum + item.quantity * item.costPrice, 0);
+      const finalAmount = totalAmount - (data.discount || 0) + (data.tax || 0);
 
       const purchase = await tx.purchase.create({
         data: {
           organizationId,
           purchaseNumber: `PUR-${Date.now()}`,
-          supplierId: data.supplierId,
+          supplierId: data.supplierId || null, // Handle optional supplier
           totalAmount,
-          paymentStatus: data.paymentStatus,
+          finalAmount,
+          paymentStatus: data.paymentStatus || 'UNPAID',
           amountPaid: data.amountPaid || 0,
           notes: data.notes,
           createdById: userId,
           syncedFromMobile: !!data.mobileRecordId,
           mobileRecordId: data.mobileRecordId,
-        } as any,
+        },
         include: { items: true },
       });
 

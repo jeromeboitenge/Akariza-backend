@@ -237,4 +237,70 @@ export class ProductsService {
       ORDER BY "currentStock" ASC
     `;
   }
+
+  async adjustStock(id: string, organizationId: string, userId: string, data: any) {
+    try {
+      const { adjustmentType, quantity, newStock, reason } = data;
+
+      // Validate product exists
+      const product = await this.prisma.product.findFirst({
+        where: { id, organizationId }
+      });
+
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+
+      let finalStock: number;
+
+      switch (adjustmentType) {
+        case 'increase':
+          finalStock = product.currentStock + quantity;
+          break;
+        case 'decrease':
+          finalStock = Math.max(0, product.currentStock - quantity);
+          break;
+        case 'set':
+          finalStock = newStock;
+          break;
+        default:
+          throw new BadRequestException('Invalid adjustment type');
+      }
+
+      // Update product stock and create transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        const updatedProduct = await tx.product.update({
+          where: { id },
+          data: { currentStock: finalStock }
+        });
+
+        await tx.stockTransaction.create({
+          data: {
+            organizationId,
+            productId: id,
+            type: 'ADJUSTMENT',
+            quantity: adjustmentType === 'set' ? finalStock - product.currentStock : 
+                     adjustmentType === 'increase' ? quantity : -quantity,
+            referenceType: 'Manual Adjustment',
+            referenceId: id,
+            balanceAfter: finalStock,
+            notes: reason || `Stock ${adjustmentType} by ${adjustmentType === 'set' ? 'setting to' : ''} ${quantity || newStock}`,
+            createdById: userId,
+          },
+        });
+
+        return updatedProduct;
+      });
+
+      console.log(`✅ Stock adjusted for ${product.name}: ${product.currentStock} → ${finalStock}`);
+      return result;
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+
+      console.error('❌ Stock adjustment error:', error);
+      throw new BadRequestException(error.message || 'Failed to adjust stock');
+    }
+  }
 }
