@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsArray, ValidateNested, IsOptional, IsNumber, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 class PurchaseItemDto {
@@ -9,10 +9,12 @@ class PurchaseItemDto {
   productId: string;
 
   @ApiProperty({ example: 50 })
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   quantity: number;
 
   @ApiProperty({ example: 18000 })
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   costPrice: number;
 }
@@ -47,6 +49,7 @@ export class CreatePurchaseDto {
 
   @ApiProperty({ example: 900000, required: false })
   @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : 0)
   @IsNumber()
   amountPaid?: number;
 

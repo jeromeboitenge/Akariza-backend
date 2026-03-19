@@ -14,7 +14,7 @@ export class PurchasesController {
   @Post()
   @ApiOperation({ summary: 'Create purchase' })
   @ApiBody({ type: CreatePurchaseDto })
-  create(@Body(ValidationPipe) data: CreatePurchaseDto, @Request() req) {
+  create(@Body(new ValidationPipe({ transform: true, whitelist: true })) data: CreatePurchaseDto, @Request() req) {
     return this.service.create(data, req.user.organizationId, req.user.id);
   }
 
