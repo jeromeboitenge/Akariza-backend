@@ -17,6 +17,27 @@ export class PurchasesService {
       throw new BadRequestException('At least one item is required for the purchase.');
     }
 
+    // Validate each item
+    for (const item of data.items) {
+      if (!item.productId) {
+        throw new BadRequestException('Product ID is required for all items.');
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        throw new BadRequestException('Valid quantity is required for all items.');
+      }
+      if (!item.costPrice || item.costPrice <= 0) {
+        throw new BadRequestException('Valid cost price is required for all items.');
+      }
+
+      // Verify product exists
+      const product = await this.prisma.product.findFirst({
+        where: { id: item.productId, organizationId, isActive: true }
+      });
+      if (!product) {
+        throw new BadRequestException(`Product with ID ${item.productId} not found or inactive.`);
+      }
+    }
+
     // Validate supplier if provided
     if (data.supplierId) {
       const supplier = await this.prisma.supplier.findFirst({
@@ -40,8 +61,19 @@ export class PurchasesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const totalAmount = data.items.reduce((sum, item) => sum + item.quantity * item.costPrice, 0);
-      const finalAmount = totalAmount - (data.discount || 0) + (data.tax || 0);
+      // Calculate totals with proper validation
+      const totalAmount = data.items.reduce((sum, item) => {
+        const quantity = Number(item.quantity);
+        const costPrice = Number(item.costPrice);
+        if (isNaN(quantity) || isNaN(costPrice)) {
+          throw new BadRequestException('Invalid quantity or cost price in items.');
+        }
+        return sum + (quantity * costPrice);
+      }, 0);
+
+      const discount = Number(data.discount) || 0;
+      const tax = Number(data.tax) || 0;
+      const finalAmount = totalAmount - discount + tax;
 
       const purchase = await tx.purchase.create({
         data: {
@@ -49,26 +81,32 @@ export class PurchasesService {
           purchaseNumber: `PUR-${Date.now()}`,
           supplierId: data.supplierId || null, // Handle optional supplier
           totalAmount,
+          discount,
+          tax,
           finalAmount,
           paymentStatus: data.paymentStatus || 'UNPAID',
-          amountPaid: data.amountPaid || 0,
-          notes: data.notes,
+          amountPaid: Number(data.amountPaid) || 0,
+          notes: data.notes || null,
           createdById: userId,
           syncedFromMobile: !!data.mobileRecordId,
-          mobileRecordId: data.mobileRecordId,
+          mobileRecordId: data.mobileRecordId || null,
         },
         include: { items: true },
       });
 
       // Create items and update stock
       for (const item of data.items) {
+        const quantity = Number(item.quantity);
+        const costPrice = Number(item.costPrice);
+        const total = quantity * costPrice;
+
         await tx.purchaseItem.create({
           data: {
             purchaseId: purchase.id,
             productId: item.productId,
-            quantity: item.quantity,
-            costPrice: item.costPrice,
-            total: item.quantity * item.costPrice,
+            quantity,
+            costPrice,
+            total,
           },
         });
 
@@ -78,25 +116,31 @@ export class PurchasesService {
           organizationId,
           item.productId,
           'PURCHASE',
-          item.quantity,
+          quantity,
           'Purchase',
           purchase.id,
           userId,
+          `Purchase from ${data.supplierId ? 'supplier' : 'unknown supplier'}: ${quantity} units at ${costPrice} RWF each`
         );
 
         // Update product cost based on new purchase
-        const costUpdate = await this.costManagementService.updateProductCostFromPurchase(
-          tx,
-          organizationId,
-          item.productId,
-          item.quantity,
-          item.costPrice,
-          userId,
-          purchase.id,
-        );
+        try {
+          const costUpdate = await this.costManagementService.updateProductCostFromPurchase(
+            tx,
+            organizationId,
+            item.productId,
+            quantity,
+            costPrice,
+            userId,
+            purchase.id,
+          );
 
-        if (costUpdate.updated) {
-          console.log(`💰 Product cost updated: ${costUpdate.oldCost} → ${costUpdate.newCost} RWF (${costUpdate.difference > 0 ? '+' : ''}${costUpdate.difference.toFixed(2)})`);
+          if (costUpdate.updated) {
+            console.log(`💰 Product cost updated: ${costUpdate.oldCost} → ${costUpdate.newCost} RWF (${costUpdate.difference > 0 ? '+' : ''}${costUpdate.difference.toFixed(2)})`);
+          }
+        } catch (costError) {
+          console.warn(`⚠️ Cost update failed for product ${item.productId}:`, costError.message);
+          // Continue with purchase creation even if cost update fails
         }
       }
 
