@@ -1,17 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 export class UsersController {
   constructor(private service: UsersService) {}
 
   @Post()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  @ApiOperation({ summary: 'Create user (BOSS and MANAGER)' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot create users (read-only)
+  @ApiOperation({ summary: 'Create user (BOSS and MANAGER only)' })
   @ApiBody({
     schema: {
       example: {
@@ -27,7 +30,7 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users' })
+  @ApiOperation({ summary: 'Get all users (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
   async findAll(@Request() req) {
     console.log('👤 User making request:', { 
       id: req.user.id, 
@@ -36,31 +39,46 @@ export class UsersController {
       branchId: req.user.branchId,
       type: req.user.type 
     });
-    const users = await this.service.findAll(
-      req.user.organizationId, 
-      req.user.role,
-      req.user.branchId
-    );
-    console.log('📊 Found users count:', users.length);
-    return users;
+    
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all users across all organizations (read-only)
+      const users = await this.service.findAllSystemAdmin();
+      console.log('📊 Found users count (SYSTEM_ADMIN):', users.length);
+      return users;
+    } else {
+      // Others see their organization/branch users
+      const users = await this.service.findAll(
+        req.user.organizationId, 
+        req.user.role,
+        req.user.branchId
+      );
+      console.log('📊 Found users count:', users.length);
+      return users;
+    }
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiOperation({ summary: 'Get user by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    return this.service.findOne(id, req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any user (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // Others see their organization users
+      return this.service.findOne(id, req.user.organizationId);
+    }
   }
 
   @Patch(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Update user' })
+  @Roles('BOSS') // Only BOSS can update users (SYSTEM_ADMIN read-only)
+  @ApiOperation({ summary: 'Update user (BOSS only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Deactivate user' })
+  @Roles('BOSS') // Only BOSS can deactivate users (SYSTEM_ADMIN read-only)
+  @ApiOperation({ summary: 'Deactivate user (BOSS only)' })
   deactivate(@Param('id') id: string, @Request() req) {
     return this.service.deactivate(id, req.user.organizationId);
   }
@@ -88,7 +106,7 @@ export class UsersController {
   }
 
   @Patch(':id/reset-password')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
+  @Roles('BOSS') // Only BOSS can reset passwords (SYSTEM_ADMIN read-only)
   @ApiOperation({ summary: 'Reset user password (BOSS only)' })
   @ApiBody({
     schema: {
