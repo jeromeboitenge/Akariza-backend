@@ -1,13 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CostManagementService } from './cost-management.service';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 import { CreateProductDto } from '../common/dto/examples.dto';
 
 @ApiTags('Products')
 @ApiBearerAuth('JWT-auth')
 @Controller('products')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
 export class ProductsController {
   constructor(
@@ -16,8 +19,8 @@ export class ProductsController {
   ) {}
 
   @Post()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  @ApiOperation({ summary: 'Create new product' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot create products (read-only)
+  @ApiOperation({ summary: 'Create new product (BOSS/MANAGER only)' })
   @ApiBody({ 
     type: CreateProductDto,
     examples: {
@@ -60,29 +63,54 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all products' })
+  @ApiOperation({ summary: 'Get all products (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all products across all organizations (read-only)
+      return this.service.findAllSystemAdmin();
+    } else {
+      // Others see their organization products
+      return this.service.findAll(req.user.organizationId);
+    }
   }
 
   @Get('type/:type')
   @ApiOperation({ summary: 'Get products by type (REGULAR or FAST_MOVING)' })
   findByType(@Param('type') type: string, @Request() req) {
-    return this.service.findByType(req.user.organizationId, type);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all products by type (read-only)
+      return this.service.findByTypeSystemAdmin(type);
+    } else {
+      // Others see their organization products by type
+      return this.service.findByType(req.user.organizationId, type);
+    }
   }
 
   @Get('low-stock')
   findLowStock(@Request() req) {
-    return this.service.findLowStock(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all low stock products (read-only)
+      return this.service.findLowStockSystemAdmin();
+    } else {
+      // Others see their organization low stock products
+      return this.service.findLowStock(req.user.organizationId);
+    }
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req) {
-    return this.service.findOne(id, req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any product (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // Others see their organization products
+      return this.service.findOne(id, req.user.organizationId);
+    }
   }
 
   @Patch(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot update products (read-only)
+  @ApiOperation({ summary: 'Update product (BOSS/MANAGER only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
@@ -90,18 +118,30 @@ export class ProductsController {
   @Get(':id/cost-history')
   @ApiOperation({ summary: 'Get product cost change history' })
   getCostHistory(@Param('id') id: string, @Request() req) {
-    return this.costManagementService.getProductCostHistory(req.user.organizationId, id);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any product cost history (read-only)
+      return this.costManagementService.getProductCostHistorySystemAdmin(id);
+    } else {
+      // Others see their organization product cost history
+      return this.costManagementService.getProductCostHistory(req.user.organizationId, id);
+    }
   }
 
   @Get(':id/cost-statistics')
   @ApiOperation({ summary: 'Get product cost statistics and analysis' })
   getCostStatistics(@Param('id') id: string, @Request() req) {
-    return this.costManagementService.getProductCostStatistics(req.user.organizationId, id);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any product cost statistics (read-only)
+      return this.costManagementService.getProductCostStatisticsSystemAdmin(id);
+    } else {
+      // Others see their organization product cost statistics
+      return this.costManagementService.getProductCostStatistics(req.user.organizationId, id);
+    }
   }
 
   @Post(':id/adjust-stock')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  @ApiOperation({ summary: 'Adjust product stock' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot adjust stock (read-only)
+  @ApiOperation({ summary: 'Adjust product stock (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -118,8 +158,9 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  deactivate(@Param('id') id: string) {
-    return this.service.deactivate(id);
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot deactivate products (read-only)
+  @ApiOperation({ summary: 'Deactivate product (BOSS/MANAGER only)' })
+  deactivate(@Param('id') id: string, @Request() req) {
+    return this.service.deactivateByOwner(id, req.user.organizationId);
   }
 }
