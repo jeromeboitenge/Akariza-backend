@@ -1,18 +1,21 @@
-import { Controller, Get, Post, Body, Param, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SalesService } from './sales.service';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 
 @ApiTags('Sales')
 @ApiBearerAuth()
 @Controller('sales')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 export class SalesController {
   constructor(private service: SalesService) {}
 
   @Post()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER') // SYSTEM_ADMIN cannot create sales (read-only)
   @ApiOperation({ 
-    summary: 'Create sale',
+    summary: 'Create sale (BOSS/MANAGER/CASHIER only)',
     description: 'Cashier workflow: 1) Select product, 2) Enter quantity, 3) Enter amount paid, 4) Select payment method (CASH/MOBILE)'
   })
   @ApiBody({
@@ -112,21 +115,33 @@ export class SalesController {
 
   @Get()
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
-  @ApiOperation({ summary: 'Get all sales' })
+  @ApiOperation({ summary: 'Get all sales (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all sales across all organizations (read-only)
+      return this.service.findAllSystemAdmin();
+    } else {
+      // Others see their organization sales
+      return this.service.findAll(req.user.organizationId);
+    }
   }
 
   @Get('my-sales')
   @Roles('CASHIER')
-  @ApiOperation({ summary: 'Get my sales' })
+  @ApiOperation({ summary: 'Get my sales (CASHIER only)' })
   findMySales(@Request() req) {
     return this.service.findMySales(req.user.organizationId, req.user.id);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get sale by ID' })
+  @ApiOperation({ summary: 'Get sale by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    return this.service.findOne(id, req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any sale (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // Others see their organization sales
+      return this.service.findOne(id, req.user.organizationId);
+    }
   }
 }
