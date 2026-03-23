@@ -1,17 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchaseOrdersService } from './purchase-orders.service';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 
 @ApiTags('Purchase Orders')
 @ApiBearerAuth()
 @Controller('purchase-orders')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
 export class PurchaseOrdersController {
   constructor(private service: PurchaseOrdersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create purchase order' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot create purchase orders (read-only)
+  @ApiOperation({ summary: 'Create purchase order (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
       example: {
@@ -33,38 +37,53 @@ export class PurchaseOrdersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all purchase orders' })
+  @ApiOperation({ summary: 'Get all purchase orders (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all purchase orders across all organizations (read-only)
+      return this.service.findAllSystemAdmin();
+    } else {
+      // Others see their organization purchase orders
+      return this.service.findAll(req.user.organizationId);
+    }
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get purchase order by ID' })
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @ApiOperation({ summary: 'Get purchase order by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  findOne(@Param('id') id: string, @Request() req) {
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any purchase order (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // Others see their organization purchase orders
+      return this.service.findOne(id);
+    }
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update purchase order' })
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.service.update(id, data);
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot update purchase orders (read-only)
+  @ApiOperation({ summary: 'Update purchase order (BOSS/MANAGER only)' })
+  update(@Param('id') id: string, @Body() data: any, @Request() req) {
+    return this.service.updateByOwner(id, req.user.organizationId, data);
   }
 
   @Post(':id/approve')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Approve purchase order' })
+  @Roles('BOSS') // Only BOSS can approve purchase orders (SYSTEM_ADMIN read-only)
+  @ApiOperation({ summary: 'Approve purchase order (BOSS only)' })
   approve(@Param('id') id: string, @Request() req) {
     return this.service.approve(id, req.user.id);
   }
 
   @Post(':id/convert')
-  @ApiOperation({ summary: 'Convert PO to purchase' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot convert purchase orders (read-only)
+  @ApiOperation({ summary: 'Convert PO to purchase (BOSS/MANAGER only)' })
   convertToPurchase(@Param('id') id: string, @Request() req) {
     return this.service.convertToPurchase(id, req.user.id);
   }
 
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Update purchase order status' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot update status (read-only)
+  @ApiOperation({ summary: 'Update purchase order status (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
       type: 'object',

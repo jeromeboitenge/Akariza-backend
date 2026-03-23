@@ -11,13 +11,13 @@ export class AdminDashboardController {
   constructor(private service: AdminDashboardService) {}
 
   @Get('overview')
-  @ApiOperation({ summary: 'System-wide overview statistics' })
+  @ApiOperation({ summary: 'System-wide overview statistics with health metrics' })
   getOverview() {
     return this.service.getSystemOverview();
   }
 
   @Get('organizations/stats')
-  @ApiOperation({ summary: 'Statistics for all organizations' })
+  @ApiOperation({ summary: 'Comprehensive statistics for all organizations' })
   getOrganizationsStats() {
     return this.service.getOrganizationsStats();
   }
@@ -30,7 +30,7 @@ export class AdminDashboardController {
   }
 
   @Get('sales')
-  @ApiOperation({ summary: 'System-wide sales statistics' })
+  @ApiOperation({ summary: 'System-wide sales statistics with trends' })
   @ApiQuery({ name: 'startDate', required: false, example: '2026-01-01' })
   @ApiQuery({ name: 'endDate', required: false, example: '2026-12-31' })
   getSalesStats(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
@@ -38,21 +38,27 @@ export class AdminDashboardController {
   }
 
   @Get('products/top-selling')
-  @ApiOperation({ summary: 'Top selling products across all organizations' })
+  @ApiOperation({ summary: 'Top selling products across all organizations with detailed metrics' })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   getTopProducts(@Query('limit') limit?: string) {
     return this.service.getTopProducts(limit ? parseInt(limit) : 20);
   }
 
   @Get('users/activity')
-  @ApiOperation({ summary: 'User activity across system' })
+  @ApiOperation({ summary: 'Comprehensive user activity across system' })
   getUserActivity() {
     return this.service.getUserActivity();
   }
 
   @Get('branches/stats')
-  @ApiOperation({ summary: 'Branch statistics across all organizations' })
+  @ApiOperation({ summary: 'Detailed branch statistics across all organizations' })
   getBranchesStats() {
     return this.service.getBranchesStats();
+  }
+
+  @Get('system/health')
+  @ApiOperation({ summary: 'System health monitoring and diagnostics' })
+  getSystemHealth() {
+    return this.service.getSystemHealth();
   }
 }
