@@ -1,18 +1,22 @@
-import { Controller, Get, Post, Body, Param, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 
 @ApiTags('Purchases')
 @ApiBearerAuth()
 @Controller('purchases')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
 export class PurchasesController {
   constructor(private service: PurchasesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create purchase' })
+  @Roles('BOSS', 'MANAGER', 'CASHIER') // SYSTEM_ADMIN cannot create purchases (read-only)
+  @ApiOperation({ summary: 'Create purchase (BOSS/MANAGER/CASHIER only)' })
   @ApiBody({ type: CreatePurchaseDto })
   async create(@Body() data: CreatePurchaseDto, @Request() req) {
     console.log('🎯 Purchase controller hit:', {
@@ -31,14 +35,26 @@ export class PurchasesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all purchases' })
+  @ApiOperation({ summary: 'Get all purchases (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all purchases across all organizations (read-only)
+      return this.service.findAllSystemAdmin();
+    } else {
+      // Others see their organization purchases
+      return this.service.findAll(req.user.organizationId);
+    }
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get purchase by ID' })
+  @ApiOperation({ summary: 'Get purchase by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    return this.service.findOne(id, req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any purchase (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // Others see their organization purchases
+      return this.service.findOne(id, req.user.organizationId);
+    }
   }
 }
