@@ -1,18 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { BranchesService } from './branches.service';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 
 @ApiTags('Branches')
 @ApiBearerAuth()
 @Controller('branches')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
 export class BranchesController {
   constructor(private service: BranchesService) {}
 
   @Post()
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Create branch' })
+  @Roles('BOSS') // Only BOSS can create branches
+  @ApiOperation({ summary: 'Create branch (BOSS only)' })
   @ApiBody({
     schema: {
       example: {
@@ -29,39 +32,58 @@ export class BranchesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all branches' })
+  @ApiOperation({ summary: 'Get all branches (SYSTEM_ADMIN: read-only all orgs, BOSS/MANAGER: own org/branch)' })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all branches across all organizations (read-only)
+      return this.service.findAllSystemAdmin();
+    } else {
+      // BOSS/MANAGER see their organization/branch branches
+      return this.service.findAll(req.user.organizationId);
+    }
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get branch by ID' })
+  @ApiOperation({ summary: 'Get branch by ID (SYSTEM_ADMIN: read-only, BOSS/MANAGER: own org/branch)' })
   findOne(@Param('id') id: string, @Request() req) {
-    return this.service.findOne(id, req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any branch (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // BOSS/MANAGER see their organization branches
+      return this.service.findOne(id, req.user.organizationId);
+    }
   }
 
   @Patch(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Update branch' })
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.service.update(id, data);
+  @Roles('BOSS') // Only BOSS can update branches
+  @ApiOperation({ summary: 'Update branch (BOSS only)' })
+  update(@Param('id') id: string, @Body() data: any, @Request() req) {
+    return this.service.updateByOwner(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Deactivate branch' })
-  deactivate(@Param('id') id: string) {
-    return this.service.deactivate(id);
+  @Roles('BOSS') // Only BOSS can deactivate branches
+  @ApiOperation({ summary: 'Deactivate branch (BOSS only)' })
+  deactivate(@Param('id') id: string, @Request() req) {
+    return this.service.deactivateByOwner(id, req.user.organizationId);
   }
 
   @Get(':id/inventory')
-  @ApiOperation({ summary: 'Get branch inventory' })
-  getInventory(@Param('id') id: string) {
-    return this.service.getInventory(id);
+  @ApiOperation({ summary: 'Get branch inventory (SYSTEM_ADMIN: read-only, others: own org/branch)' })
+  getInventory(@Param('id') id: string, @Request() req) {
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any branch inventory (read-only)
+      return this.service.getInventorySystemAdmin(id);
+    } else {
+      // Others see their organization/branch inventory
+      return this.service.getInventory(id);
+    }
   }
 
   @Post('transfer')
-  @ApiOperation({ summary: 'Create stock transfer between branches' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot create transfers (read-only)
+  @ApiOperation({ summary: 'Create stock transfer between branches (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
       example: {
@@ -78,8 +100,8 @@ export class BranchesController {
   }
 
   @Post('transfer/:id/approve')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
-  @ApiOperation({ summary: 'Approve stock transfer' })
+  @Roles('BOSS') // Only BOSS can approve transfers
+  @ApiOperation({ summary: 'Approve stock transfer (BOSS only)' })
   approveTransfer(@Param('id') id: string, @Request() req) {
     return this.service.approveTransfer(id, req.user.id);
   }
