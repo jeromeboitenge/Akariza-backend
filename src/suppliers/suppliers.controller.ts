@@ -1,17 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SuppliersService } from './suppliers.service';
-import { Roles } from '../common/decorators';
+import { Roles, SystemAdminReadOnly } from '../common/decorators';
+import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
 
 @ApiTags('Suppliers')
 @ApiBearerAuth()
 @Controller('suppliers')
+@UseGuards(SystemAdminReadOnlyGuard)
+@SystemAdminReadOnly()
 export class SuppliersController {
   constructor(private service: SuppliersService) {}
 
   @Post()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  @ApiOperation({ summary: 'Create supplier' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot create suppliers (read-only)
+  @ApiOperation({ summary: 'Create supplier (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
       example: {
@@ -30,30 +33,41 @@ export class SuppliersController {
 
   @Get()
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
-  @ApiOperation({ summary: 'Get all suppliers' })
+  @ApiOperation({ summary: 'Get all suppliers (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
-    return this.service.findAll(req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view all suppliers across all organizations (read-only)
+      return this.service.findAllSystemAdmin();
+    } else {
+      // Others see their organization suppliers
+      return this.service.findAll(req.user.organizationId);
+    }
   }
 
   @Get(':id')
   @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
-  @ApiOperation({ summary: 'Get supplier by ID' })
+  @ApiOperation({ summary: 'Get supplier by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    return this.service.findOne(id, req.user.organizationId);
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      // SYSTEM_ADMIN can view any supplier (read-only)
+      return this.service.findOneSystemAdmin(id);
+    } else {
+      // Others see their organization suppliers
+      return this.service.findOne(id, req.user.organizationId);
+    }
   }
 
   @Patch(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  @ApiOperation({ summary: 'Update supplier' })
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot update suppliers (read-only)
+  @ApiOperation({ summary: 'Update supplier (BOSS/MANAGER only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
-  @ApiOperation({ summary: 'Delete supplier' })
-  delete(@Param('id') id: string) {
-    // Temporary placeholder - implement when suppliers service is complete
-    return { message: 'Supplier deleted successfully' };
+  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot delete suppliers (read-only)
+  @ApiOperation({ summary: 'Delete supplier (BOSS/MANAGER only)' })
+  delete(@Param('id') id: string, @Request() req) {
+    return this.service.deleteByOwner(id, req.user.organizationId);
   }
 }
