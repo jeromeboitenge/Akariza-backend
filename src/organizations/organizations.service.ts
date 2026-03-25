@@ -87,6 +87,24 @@ export class OrganizationsService {
     });
   }
 
+  async findByOwner(organizationId: string) {
+    return this.prisma.organization.findMany({
+      where: { id: organizationId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            users: true,
+            products: true,
+            sales: true,
+            purchases: true,
+            branches: true,
+          },
+        },
+      },
+    });
+  }
+
   async findOne(id: string) {
     const org = await this.prisma.organization.findUnique({
       where: { id },
@@ -118,6 +136,13 @@ export class OrganizationsService {
     return org;
   }
 
+  async findOneByOwner(id: string, organizationId: string) {
+    if (id !== organizationId) {
+      throw new ConflictException('You can only view your own organization');
+    }
+    return this.findOne(id);
+  }
+
   async update(id: string, data: any) {
     const org = await this.prisma.organization.findUnique({ where: { id } });
     if (!org) {
@@ -136,6 +161,13 @@ export class OrganizationsService {
     });
   }
 
+  async updateByOwner(id: string, organizationId: string, data: any) {
+    if (id !== organizationId) {
+      throw new ConflictException('You can only update your own organization');
+    }
+    return this.update(id, data);
+  }
+
   async deactivate(id: string) {
     const org = await this.prisma.organization.findUnique({ where: { id } });
     if (!org) {
@@ -148,6 +180,13 @@ export class OrganizationsService {
     });
   }
 
+  async deactivateByOwner(id: string, organizationId: string) {
+    if (id !== organizationId) {
+      throw new ConflictException('You can only deactivate your own organization');
+    }
+    return this.deactivate(id);
+  }
+
   async activate(id: string) {
     const org = await this.prisma.organization.findUnique({ where: { id } });
     if (!org) {
@@ -158,6 +197,13 @@ export class OrganizationsService {
       where: { id },
       data: { isActive: true },
     });
+  }
+
+  async activateByOwner(id: string, organizationId: string) {
+    if (id !== organizationId) {
+      throw new ConflictException('You can only activate your own organization');
+    }
+    return this.activate(id);
   }
 
   async getStats(id: string) {
@@ -190,5 +236,12 @@ export class OrganizationsService {
         totalRevenue: totalSales._sum.finalAmount || 0,
       },
     };
+  }
+
+  async getStatsByOwner(id: string, organizationId: string) {
+    if (id !== organizationId) {
+      throw new ConflictException('You can only view stats for your own organization');
+    }
+    return this.getStats(id);
   }
 }

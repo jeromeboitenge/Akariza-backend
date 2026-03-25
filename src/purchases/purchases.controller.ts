@@ -39,7 +39,7 @@ export class PurchasesController {
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view all purchases across all organizations (read-only)
-      return this.service.findAllSystemAdmin();
+      return (this.service as any).findAllSystemAdmin();
     } else {
       // Others see their organization purchases
       return this.service.findAll(req.user.organizationId);
@@ -51,7 +51,7 @@ export class PurchasesController {
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view any purchase (read-only)
-      return this.service.findOneSystemAdmin(id);
+      return (this.service as any).findOneSystemAdmin(id);
     } else {
       // Others see their organization purchases
       return this.service.findOne(id, req.user.organizationId);

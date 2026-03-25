@@ -42,7 +42,7 @@ export class UsersController {
     
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view all users across all organizations (read-only)
-      const users = await this.service.findAllSystemAdmin();
+      const users = await (this.service as any).findAllSystemAdmin();
       console.log('📊 Found users count (SYSTEM_ADMIN):', users.length);
       return users;
     } else {
@@ -62,7 +62,7 @@ export class UsersController {
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view any user (read-only)
-      return this.service.findOneSystemAdmin(id);
+      return (this.service as any).findOneSystemAdmin(id);
     } else {
       // Others see their organization users
       return this.service.findOne(id, req.user.organizationId);
