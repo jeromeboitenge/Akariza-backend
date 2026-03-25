@@ -31,7 +31,7 @@ export class CustomersController {
   }
 
   @Get()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get all customers (SYSTEM_ADMIN: read-only all orgs, others: view branch customers)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
@@ -47,7 +47,7 @@ export class CustomersController {
   }
 
   @Get(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get customer by ID (scoped by role)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {

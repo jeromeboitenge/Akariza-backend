@@ -114,7 +114,7 @@ export class SalesController {
   }
 
   @Get()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get all sales (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {

@@ -6,7 +6,7 @@ import { Roles } from '../common/decorators';
 @ApiTags('Expenses')
 @ApiBearerAuth()
 @Controller('expenses')
-@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+@Roles('BOSS', 'MANAGER', 'CASHIER')
 export class ExpensesController {
   constructor(private service: ExpensesService) {}
 
@@ -160,7 +160,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS')
+  @Roles('BOSS')
   @ApiOperation({ summary: 'Delete expense' })
   delete(@Param('id') id: string) {
     return this.service.delete(id);

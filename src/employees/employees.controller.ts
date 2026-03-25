@@ -9,7 +9,7 @@ import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard'
 @Controller('employees')
 @UseGuards(SystemAdminReadOnlyGuard)
 @SystemAdminReadOnly()
-@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+@Roles('BOSS', 'MANAGER')
 export class EmployeesController {
   constructor(private service: EmployeesService) {}
 

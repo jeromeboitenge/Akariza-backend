@@ -6,7 +6,7 @@ import { Roles } from '../common/decorators';
 @ApiTags('Analytics')
 @ApiBearerAuth('JWT-auth')
 @Controller('analytics')
-@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+@Roles('BOSS', 'MANAGER')
 export class AnalyticsController {
   constructor(private service: AnalyticsService) {}
 

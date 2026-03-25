@@ -24,7 +24,6 @@ export class DashboardController {
         return this.service.getManagerDashboard(id, organizationId, branchId);
       
       case 'BOSS':
-      case 'SYSTEM_ADMIN':
         return this.service.getBossDashboard(organizationId);
       
       default:

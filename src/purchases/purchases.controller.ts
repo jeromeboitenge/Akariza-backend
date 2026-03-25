@@ -10,7 +10,7 @@ import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard'
 @Controller('purchases')
 @UseGuards(SystemAdminReadOnlyGuard)
 @SystemAdminReadOnly()
-@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+@Roles('BOSS', 'MANAGER', 'CASHIER')
 export class PurchasesController {
   constructor(private service: PurchasesService) {}
 

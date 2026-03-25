@@ -30,7 +30,7 @@ export class NotificationsController {
   }
 
   @Post('check-low-stock')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Trigger low stock notifications' })
   checkLowStock(@Request() req) {
     // Temporary placeholder - return success message
@@ -38,7 +38,7 @@ export class NotificationsController {
   }
 
   @Post('check-expiring')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Trigger expiring products notifications' })
   checkExpiring(@Request() req) {
     // Temporary placeholder - return success message

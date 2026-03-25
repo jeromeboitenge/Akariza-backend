@@ -1,26 +1,23 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { OrganizationsService } from './organizations.service';
-import { Roles, SystemAdminReadOnly } from '../common/decorators';
-import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
+import { Roles } from '../common/decorators';
 import { CreateOrganizationDto } from '../common/dto/examples.dto';
 
 @ApiTags('Organizations')
 @ApiBearerAuth('JWT-auth')
 @Controller('organizations')
-@UseGuards(SystemAdminReadOnlyGuard)
-@SystemAdminReadOnly()
 @Roles('SYSTEM_ADMIN', 'BOSS')
 export class OrganizationsController {
   constructor(private service: OrganizationsService) {}
 
   @Post()
-  @Roles('BOSS') // Only BOSS can create organizations now
-  @ApiOperation({ summary: 'Create new organization (BOSS only)' })
+  @Roles('SYSTEM_ADMIN', 'BOSS') // SYSTEM_ADMIN and BOSS can create organizations
+  @ApiOperation({ summary: 'Create new organization (SYSTEM_ADMIN and BOSS)' })
   @ApiBody({ type: CreateOrganizationDto })
   @ApiResponse({ status: 201, description: 'Organization created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 403, description: 'Forbidden - BOSS only' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 409, description: 'Organization already exists (duplicate name, email, or phone)' })
   create(@Body() data: CreateOrganizationDto, @Request() req) {
     return this.service.create(data, req.user.id);
@@ -55,8 +52,8 @@ export class OrganizationsController {
   }
 
   @Patch(':id')
-  @Roles('BOSS') // Only BOSS can update organizations
-  @ApiOperation({ summary: 'Update organization (BOSS only - own organization)' })
+  @Roles('SYSTEM_ADMIN', 'BOSS') // SYSTEM_ADMIN and BOSS can update organizations
+  @ApiOperation({ summary: 'Update organization (SYSTEM_ADMIN: any, BOSS: own organization)' })
   @ApiParam({ name: 'id', example: 'org-1' })
   @ApiBody({
     schema: {
@@ -74,30 +71,39 @@ export class OrganizationsController {
   @ApiResponse({ status: 403, description: 'Forbidden - Can only update own organization' })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      return this.service.update(id, data);
+    }
     // BOSS can only update their own organization
     return this.service.updateByOwner(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS') // Only BOSS can deactivate organizations
-  @ApiOperation({ summary: 'Deactivate organization (BOSS only - own organization)' })
+  @Roles('SYSTEM_ADMIN', 'BOSS') // SYSTEM_ADMIN and BOSS can deactivate organizations
+  @ApiOperation({ summary: 'Deactivate organization (SYSTEM_ADMIN: any, BOSS: own organization)' })
   @ApiParam({ name: 'id', example: 'org-1' })
   @ApiResponse({ status: 200, description: 'Organization deactivated successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - Can only deactivate own organization' })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   deactivate(@Param('id') id: string, @Request() req) {
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      return this.service.deactivate(id);
+    }
     // BOSS can only deactivate their own organization
     return this.service.deactivateByOwner(id, req.user.organizationId);
   }
 
   @Patch(':id/activate')
-  @Roles('BOSS') // Only BOSS can activate organizations
-  @ApiOperation({ summary: 'Activate organization (BOSS only - own organization)' })
+  @Roles('SYSTEM_ADMIN', 'BOSS') // SYSTEM_ADMIN and BOSS can activate organizations
+  @ApiOperation({ summary: 'Activate organization (SYSTEM_ADMIN: any, BOSS: own organization)' })
   @ApiParam({ name: 'id', example: 'org-1' })
   @ApiResponse({ status: 200, description: 'Organization activated successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - Can only activate own organization' })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   activate(@Param('id') id: string, @Request() req) {
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      return this.service.activate(id);
+    }
     // BOSS can only activate their own organization
     return this.service.activateByOwner(id, req.user.organizationId);
   }

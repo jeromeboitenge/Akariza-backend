@@ -17,7 +17,7 @@ export class StockController {
   }
 
   @Post('adjust')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Adjust stock manually' })
   @ApiBody({
     schema: {

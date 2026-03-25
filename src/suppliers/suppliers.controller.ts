@@ -32,7 +32,7 @@ export class SuppliersController {
   }
 
   @Get()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get all suppliers (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
@@ -45,7 +45,7 @@ export class SuppliersController {
   }
 
   @Get(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER')
   @ApiOperation({ summary: 'Get supplier by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {

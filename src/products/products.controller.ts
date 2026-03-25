@@ -11,7 +11,7 @@ import { CreateProductDto } from '../common/dto/examples.dto';
 @Controller('products')
 @UseGuards(SystemAdminReadOnlyGuard)
 @SystemAdminReadOnly()
-@Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER')
+@Roles('BOSS', 'MANAGER', 'CASHIER')
 export class ProductsController {
   constructor(
     private service: ProductsService,

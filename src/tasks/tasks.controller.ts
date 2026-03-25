@@ -10,7 +10,7 @@ export class TasksController {
   constructor(private service: TasksService) {}
 
   @Post()
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Create task' })
   @ApiBody({
     schema: {
@@ -53,7 +53,7 @@ export class TasksController {
   }
 
   @Delete(':id')
-  @Roles('SYSTEM_ADMIN', 'BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER')
   @ApiOperation({ summary: 'Delete task' })
   delete(@Param('id') id: string) {
     return this.service.delete(id);
