@@ -87,7 +87,7 @@
 
 1. Your API will be available at: `https://akariza-backend.onrender.com`
 2. Test endpoints:
-   - Health: `https://akariza-backend.onrender.com/api/v1/auth/login`
+   - Health: `https://akariza-backend.onrender.com/api/v1/health`
    - Docs: `https://akariza-backend.onrender.com/api/v1/docs`
 
 ---
