@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request , UseGuards} from '@nestjs/common';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PromotionsService } from './promotions.service';
 import { Roles } from '../common/decorators';
@@ -6,7 +7,8 @@ import { Roles } from '../common/decorators';
 @ApiTags('Promotions')
 @ApiBearerAuth()
 @Controller('promotions')
-@Roles('BOSS', 'MANAGER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN')
 export class PromotionsController {
   constructor(private service: PromotionsService) {}
 

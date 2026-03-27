@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Query, Request , UseGuards} from '@nestjs/common';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { Roles } from '../common/decorators';
@@ -6,7 +7,8 @@ import { Roles } from '../common/decorators';
 @ApiTags('Analytics')
 @ApiBearerAuth('JWT-auth')
 @Controller('analytics')
-@Roles('BOSS', 'MANAGER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN')
 export class AnalyticsController {
   constructor(private service: AnalyticsService) {}
 

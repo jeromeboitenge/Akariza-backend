@@ -2,20 +2,19 @@
 import { Controller, Get, Post, Body, Patch, Param, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { EmployeesService } from './employees.service';
-import { Roles, SystemAdminReadOnly } from '../common/decorators';
-import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
+import { Roles } from '../common/decorators';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
 @Controller('employees')
-@UseGuards(SystemAdminReadOnlyGuard)
-@SystemAdminReadOnly()
-@Roles('BOSS', 'MANAGER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN')
 export class EmployeesController {
   constructor(private service: EmployeesService) {}
 
   @Post()
-  @Roles('BOSS') // Only BOSS can create employees (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can create employees (SYSTEM_ADMIN read-only)
   @ApiOperation({ summary: 'Create employee (BOSS only)' })
   @ApiBody({
     schema: {
@@ -36,34 +35,26 @@ export class EmployeesController {
   @Get()
   @ApiOperation({ summary: 'Get all employees (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
-    if (req.user.role === 'SYSTEM_ADMIN') {
-      throw new ForbiddenException('System Admin cannot access operational data.');
-    } else {
-      // Others see their organization employees
+    // Others see their organization employees
       return this.service.findAll(req.user.organizationId);
-    }
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get employee by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    if (req.user.role === 'SYSTEM_ADMIN') {
-      throw new ForbiddenException('System Admin cannot access operational data.');
-    } else {
-      // Others see their organization employees
+    // Others see their organization employees
       return this.service.findOne(id);
-    }
   }
 
   @Patch(':id')
-  @Roles('BOSS') // Only BOSS can update employees (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can update employees (SYSTEM_ADMIN read-only)
   @ApiOperation({ summary: 'Update employee (BOSS only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Post(':id/attendance')
-  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot record attendance (read-only)
+  @Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN') // SYSTEM_ADMIN cannot record attendance (read-only)
   @ApiOperation({ summary: 'Record attendance (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
@@ -79,7 +70,7 @@ export class EmployeesController {
   }
 
   @Post(':id/targets')
-  @Roles('BOSS') // Only BOSS can set targets (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can set targets (SYSTEM_ADMIN read-only)
   @ApiOperation({ summary: 'Set sales target (BOSS only)' })
   @ApiBody({
     schema: {

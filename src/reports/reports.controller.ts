@@ -1,4 +1,5 @@
-import { Controller, Get, Query, Request } from '@nestjs/common';
+import { Controller, Get, Query, Request , UseGuards} from '@nestjs/common';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { Roles } from '../common/decorators';
@@ -6,7 +7,8 @@ import { Roles } from '../common/decorators';
 @ApiTags('Reports')
 @ApiBearerAuth()
 @Controller('reports')
-@Roles('BOSS', 'MANAGER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN')
 export class ReportsController {
   constructor(private service: ReportsService) {}
 

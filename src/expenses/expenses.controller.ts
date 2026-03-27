@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Delete, Param, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Delete, Param, Query, Request , UseGuards} from '@nestjs/common';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 import { ApiTags, ApiOperation, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { ExpensesService } from './expenses.service';
 import { Roles } from '../common/decorators';
@@ -6,7 +7,8 @@ import { Roles } from '../common/decorators';
 @ApiTags('Expenses')
 @ApiBearerAuth()
 @Controller('expenses')
-@Roles('BOSS', 'MANAGER', 'CASHIER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
 export class ExpensesController {
   constructor(private service: ExpensesService) {}
 
@@ -160,7 +162,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  @Roles('BOSS')
+  @Roles('BOSS', 'SYSTEM_ADMIN')
   @ApiOperation({ summary: 'Delete expense' })
   delete(@Param('id') id: string) {
     return this.service.delete(id);

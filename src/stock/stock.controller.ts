@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Request , UseGuards} from '@nestjs/common';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 import { ApiTags, ApiOperation, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { StockService } from './stock.service';
 import { Roles } from '../common/decorators';
@@ -6,6 +7,7 @@ import { Roles } from '../common/decorators';
 @ApiTags('Stock')
 @ApiBearerAuth()
 @Controller('stock')
+@UseGuards(OrganizationContextGuard)
 export class StockController {
   constructor(private service: StockService) {}
 
@@ -17,7 +19,7 @@ export class StockController {
   }
 
   @Post('adjust')
-  @Roles('BOSS', 'MANAGER')
+  @Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN')
   @ApiOperation({ summary: 'Adjust stock manually' })
   @ApiBody({
     schema: {

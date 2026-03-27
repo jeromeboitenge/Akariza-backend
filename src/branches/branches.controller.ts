@@ -2,20 +2,19 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { BranchesService } from './branches.service';
-import { Roles, SystemAdminReadOnly } from '../common/decorators';
-import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
+import { Roles } from '../common/decorators';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 
 @ApiTags('Branches')
 @ApiBearerAuth()
 @Controller('branches')
-@UseGuards(SystemAdminReadOnlyGuard)
-@SystemAdminReadOnly()
-@Roles('BOSS', 'MANAGER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN')
 export class BranchesController {
   constructor(private service: BranchesService) {}
 
   @Post()
-  @Roles('BOSS') // Only BOSS can create branches
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can create branches
   @ApiOperation({ summary: 'Create branch (BOSS only)' })
   @ApiBody({
     schema: {
@@ -57,14 +56,14 @@ export class BranchesController {
   }
 
   @Patch(':id')
-  @Roles('BOSS') // Only BOSS can update branches
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can update branches
   @ApiOperation({ summary: 'Update branch (BOSS only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS') // Only BOSS can deactivate branches
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can deactivate branches
   @ApiOperation({ summary: 'Deactivate branch (BOSS only)' })
   deactivate(@Param('id') id: string, @Request() req) {
     return this.service.remove(id, req.user.organizationId);
@@ -83,7 +82,7 @@ export class BranchesController {
   }
 
   @Post('transfer')
-  @Roles('BOSS', 'MANAGER') // SYSTEM_ADMIN cannot create transfers (read-only)
+  @Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN') // SYSTEM_ADMIN cannot create transfers (read-only)
   @ApiOperation({ summary: 'Create stock transfer between branches (BOSS/MANAGER only)' })
   @ApiBody({
     schema: {
@@ -101,7 +100,7 @@ export class BranchesController {
   }
 
   @Post('transfer/:id/approve')
-  @Roles('BOSS') // Only BOSS can approve transfers
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can approve transfers
   @ApiOperation({ summary: 'Approve stock transfer (BOSS only)' })
   approveTransfer(@Param('id') id: string, @Request() req) {
     return this.service.approveTransfer(id, req.user.id);

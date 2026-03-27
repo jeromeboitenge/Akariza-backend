@@ -2,20 +2,19 @@ import { Controller, Get, Post, Body, Param, Request, UseGuards, ForbiddenExcept
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
-import { Roles, SystemAdminReadOnly } from '../common/decorators';
-import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
+import { Roles } from '../common/decorators';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 
 @ApiTags('Purchases')
 @ApiBearerAuth()
 @Controller('purchases')
-@UseGuards(SystemAdminReadOnlyGuard)
-@SystemAdminReadOnly()
-@Roles('BOSS', 'MANAGER', 'CASHIER')
+@UseGuards(OrganizationContextGuard)
+@Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
 export class PurchasesController {
   constructor(private service: PurchasesService) {}
 
   @Post()
-  @Roles('BOSS', 'MANAGER', 'CASHIER') // SYSTEM_ADMIN cannot create purchases (read-only)
+  @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN') // SYSTEM_ADMIN cannot create purchases (read-only)
   @ApiOperation({ summary: 'Create purchase (BOSS/MANAGER/CASHIER only)' })
   @ApiBody({ type: CreatePurchaseDto })
   async create(@Body() data: CreatePurchaseDto, @Request() req) {
@@ -37,22 +36,14 @@ export class PurchasesController {
   @Get()
   @ApiOperation({ summary: 'Get all purchases (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
-    if (req.user.role === 'SYSTEM_ADMIN') {
-      throw new ForbiddenException('System Admin cannot access operational data.');
-    } else {
-      // Others see their organization purchases
+    // Others see their organization purchases
       return this.service.findAll(req.user.organizationId);
-    }
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get purchase by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    if (req.user.role === 'SYSTEM_ADMIN') {
-      throw new ForbiddenException('System Admin cannot access operational data.');
-    } else {
-      // Others see their organization purchases
+    // Others see their organization purchases
       return this.service.findOne(id, req.user.organizationId);
-    }
   }
 }

@@ -1,19 +1,18 @@
 import { Controller, Get, Post, Body, Param, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SalesService } from './sales.service';
-import { Roles, SystemAdminReadOnly } from '../common/decorators';
-import { SystemAdminReadOnlyGuard } from '../common/system-admin-readonly.guard';
+import { Roles } from '../common/decorators';
+import { OrganizationContextGuard } from '../common/organization-context.guard';
 
 @ApiTags('Sales')
 @ApiBearerAuth()
 @Controller('sales')
-@UseGuards(SystemAdminReadOnlyGuard)
-@SystemAdminReadOnly()
+@UseGuards(OrganizationContextGuard)
 export class SalesController {
   constructor(private service: SalesService) {}
 
   @Post()
-  @Roles('BOSS', 'MANAGER', 'CASHIER') // SYSTEM_ADMIN cannot create sales (read-only)
+  @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN') // SYSTEM_ADMIN cannot create sales (read-only)
   @ApiOperation({ 
     summary: 'Create sale (BOSS/MANAGER/CASHIER only)',
     description: 'Cashier workflow: 1) Select product, 2) Enter quantity, 3) Enter amount paid, 4) Select payment method (CASH/MOBILE)'
@@ -114,19 +113,15 @@ export class SalesController {
   }
 
   @Get()
-  @Roles('BOSS', 'MANAGER', 'CASHIER')
+  @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
   @ApiOperation({ summary: 'Get all sales (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
   findAll(@Request() req) {
-    if (req.user.role === 'SYSTEM_ADMIN') {
-      throw new ForbiddenException('System Admin cannot access operational data.');
-    } else {
-      // Others see their organization sales
+    // Others see their organization sales
       return this.service.findAll(req.user.organizationId);
-    }
   }
 
   @Get('my-sales')
-  @Roles('CASHIER')
+  @Roles('CASHIER', 'SYSTEM_ADMIN')
   @ApiOperation({ summary: 'Get my sales (CASHIER only)' })
   findMySales(@Request() req) {
     return this.service.findMySales(req.user.organizationId, req.user.id);
@@ -135,11 +130,7 @@ export class SalesController {
   @Get(':id')
   @ApiOperation({ summary: 'Get sale by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
-    if (req.user.role === 'SYSTEM_ADMIN') {
-      throw new ForbiddenException('System Admin cannot access operational data.');
-    } else {
-      // Others see their organization sales
+    // Others see their organization sales
       return this.service.findOne(id, req.user.organizationId);
-    }
   }
 }
