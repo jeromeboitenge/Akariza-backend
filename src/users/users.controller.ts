@@ -29,7 +29,7 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
+  @ApiOperation({ summary: 'Get all users (Requires active workspace for SYSTEM_ADMIN)' })
   async findAll(@Request() req) {
     console.log('👤 User making request:', { 
       id: req.user.id, 
@@ -50,21 +50,21 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  @ApiOperation({ summary: 'Get user by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     // Others see their organization users
       return this.service.findOne(id, req.user.organizationId);
   }
 
   @Patch(':id')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can update users (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can update users (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Update user (BOSS only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
   }
 
   @Delete(':id')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can deactivate users (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can deactivate users (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Deactivate user (BOSS only)' })
   deactivate(@Param('id') id: string, @Request() req) {
     return this.service.deactivate(id, req.user.organizationId);
@@ -93,7 +93,7 @@ export class UsersController {
   }
 
   @Patch(':id/reset-password')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can reset passwords (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can reset passwords (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Reset user password (BOSS only)' })
   @ApiBody({
     schema: {

@@ -37,14 +37,14 @@ export class PurchaseOrdersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all purchase orders (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
+  @ApiOperation({ summary: 'Get all purchase orders (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     // Others see their organization purchase orders
       return this.service.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get purchase order by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  @ApiOperation({ summary: 'Get purchase order by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     // Others see their organization purchase orders
       return this.service.findOne(id);
@@ -58,7 +58,7 @@ export class PurchaseOrdersController {
   }
 
   @Post(':id/approve')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can approve purchase orders (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can approve purchase orders (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Approve purchase order (BOSS only)' })
   approve(@Param('id') id: string, @Request() req) {
     return this.service.approve(id, req.user.id);

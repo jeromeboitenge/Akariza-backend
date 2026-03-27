@@ -32,7 +32,7 @@ export class BranchesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all branches (SYSTEM_ADMIN: read-only all orgs, BOSS/MANAGER: own org/branch)' })
+  @ApiOperation({ summary: 'Get all branches (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view all branches across all organizations (read-only)
@@ -44,7 +44,7 @@ export class BranchesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get branch by ID (SYSTEM_ADMIN: read-only, BOSS/MANAGER: own org/branch)' })
+  @ApiOperation({ summary: 'Get branch by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view any branch (read-only)
@@ -70,7 +70,7 @@ export class BranchesController {
   }
 
   @Get(':id/inventory')
-  @ApiOperation({ summary: 'Get branch inventory (SYSTEM_ADMIN: read-only, others: own org/branch)' })
+  @ApiOperation({ summary: 'Get branch inventory (Requires active workspace for SYSTEM_ADMIN)' })
   getInventory(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       // SYSTEM_ADMIN can view any branch inventory (read-only)

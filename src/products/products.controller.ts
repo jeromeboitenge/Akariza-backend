@@ -63,7 +63,7 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all products (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
+  @ApiOperation({ summary: 'Get all products (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     // Others see their organization products
       return this.service.findAll(req.user.organizationId);

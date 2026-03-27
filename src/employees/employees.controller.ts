@@ -14,7 +14,7 @@ export class EmployeesController {
   constructor(private service: EmployeesService) {}
 
   @Post()
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can create employees (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can create employees (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Create employee (BOSS only)' })
   @ApiBody({
     schema: {
@@ -33,21 +33,21 @@ export class EmployeesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all employees (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
+  @ApiOperation({ summary: 'Get all employees (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     // Others see their organization employees
       return this.service.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get employee by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  @ApiOperation({ summary: 'Get employee by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     // Others see their organization employees
       return this.service.findOne(id);
   }
 
   @Patch(':id')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can update employees (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can update employees (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Update employee (BOSS only)' })
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.update(id, req.user.organizationId, data);
@@ -70,7 +70,7 @@ export class EmployeesController {
   }
 
   @Post(':id/targets')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can set targets (SYSTEM_ADMIN read-only)
+  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can set targets (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Set sales target (BOSS only)' })
   @ApiBody({
     schema: {

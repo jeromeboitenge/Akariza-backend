@@ -34,14 +34,14 @@ export class PurchasesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all purchases (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
+  @ApiOperation({ summary: 'Get all purchases (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     // Others see their organization purchases
       return this.service.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get purchase by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  @ApiOperation({ summary: 'Get purchase by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     // Others see their organization purchases
       return this.service.findOne(id, req.user.organizationId);

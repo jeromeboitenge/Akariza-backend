@@ -32,7 +32,7 @@ export class SuppliersController {
 
   @Get()
   @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
-  @ApiOperation({ summary: 'Get all suppliers (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
+  @ApiOperation({ summary: 'Get all suppliers (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     // Others see their organization suppliers
       return this.service.findAll(req.user.organizationId);
@@ -40,7 +40,7 @@ export class SuppliersController {
 
   @Get(':id')
   @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
-  @ApiOperation({ summary: 'Get supplier by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  @ApiOperation({ summary: 'Get supplier by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     // Others see their organization suppliers
       return this.service.findOne(id, req.user.organizationId);

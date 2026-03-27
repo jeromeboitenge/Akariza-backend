@@ -32,7 +32,7 @@ export class CustomersController {
 
   @Get()
   @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
-  @ApiOperation({ summary: 'Get all customers (SYSTEM_ADMIN: read-only all orgs, others: view branch customers)' })
+  @ApiOperation({ summary: 'Get all customers (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
       throw new ForbiddenException('System Admin cannot access operational data.');
@@ -75,7 +75,7 @@ export class CustomersController {
   }
 
   @Post(':id/loyalty/add')
-  @Roles('MANAGER', 'CASHIER', 'SYSTEM_ADMIN') // MANAGER and CASHIER can add loyalty points (SYSTEM_ADMIN read-only, BOSS view-only)
+  @Roles('MANAGER', 'CASHIER', 'SYSTEM_ADMIN') // MANAGER and CASHIER can add loyalty points (Requires active workspace for SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Add loyalty points (MANAGER/CASHIER only)' })
   @ApiBody({
     schema: {

@@ -114,7 +114,7 @@ export class SalesController {
 
   @Get()
   @Roles('BOSS', 'MANAGER', 'CASHIER', 'SYSTEM_ADMIN')
-  @ApiOperation({ summary: 'Get all sales (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
+  @ApiOperation({ summary: 'Get all sales (Requires active workspace for SYSTEM_ADMIN)' })
   findAll(@Request() req) {
     // Others see their organization sales
       return this.service.findAll(req.user.organizationId);
@@ -128,7 +128,7 @@ export class SalesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get sale by ID (SYSTEM_ADMIN: read-only, others: own org)' })
+  @ApiOperation({ summary: 'Get sale by ID (Requires active workspace for SYSTEM_ADMIN)' })
   findOne(@Param('id') id: string, @Request() req) {
     // Others see their organization sales
       return this.service.findOne(id, req.user.organizationId);
