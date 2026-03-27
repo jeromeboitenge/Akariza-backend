@@ -12,13 +12,21 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
+    const request = context.switchToHttp().getRequest();
+    const { user } = request;
+
+    // Support System Admin impersonation of an organization via header
+    if (user && user.role === 'SYSTEM_ADMIN') {
+      const impersonatedOrgId = request.headers['x-organization-id'];
+      if (impersonatedOrgId) {
+        user.organizationId = impersonatedOrgId;
+      }
+    }
+
     if (!requiredRoles) return true;
 
-    const { user } = context.switchToHttp().getRequest();
-    
-    // SYSTEM_ADMIN has full access to everything
-    if (user.role === 'SYSTEM_ADMIN') return true;
-    
+    if (!user) return false;
+
     return requiredRoles.some((role) => user.role === role);
   }
 }
