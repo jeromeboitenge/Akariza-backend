@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Patch, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { Roles, SystemAdminReadOnly } from '../common/decorators';
@@ -41,8 +41,7 @@ export class PurchaseOrdersController {
   @ApiOperation({ summary: 'Get all purchase orders (SYSTEM_ADMIN: read-only all orgs, others: own org)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view all purchase orders across all organizations (read-only)
-      return (this.service as any).findAllSystemAdmin();
+      throw new ForbiddenException('System Admin cannot access operational data.');
     } else {
       // Others see their organization purchase orders
       return this.service.findAll(req.user.organizationId);
@@ -53,8 +52,7 @@ export class PurchaseOrdersController {
   @ApiOperation({ summary: 'Get purchase order by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view any purchase order (read-only)
-      return (this.service as any).findOneSystemAdmin(id);
+      throw new ForbiddenException('System Admin cannot access operational data.');
     } else {
       // Others see their organization purchase orders
       return this.service.findOne(id);

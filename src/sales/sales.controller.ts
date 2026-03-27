@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SalesService } from './sales.service';
 import { Roles, SystemAdminReadOnly } from '../common/decorators';
@@ -118,8 +118,7 @@ export class SalesController {
   @ApiOperation({ summary: 'Get all sales (SYSTEM_ADMIN: read-only all orgs, others: own org/branch)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view all sales across all organizations (read-only)
-      return (this.service as any).findAllSystemAdmin();
+      throw new ForbiddenException('System Admin cannot access operational data.');
     } else {
       // Others see their organization sales
       return this.service.findAll(req.user.organizationId);
@@ -137,8 +136,7 @@ export class SalesController {
   @ApiOperation({ summary: 'Get sale by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view any sale (read-only)
-      return (this.service as any).findOneSystemAdmin(id);
+      throw new ForbiddenException('System Admin cannot access operational data.');
     } else {
       // Others see their organization sales
       return this.service.findOne(id, req.user.organizationId);

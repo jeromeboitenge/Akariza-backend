@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { Roles, SystemAdminReadOnly } from '../common/decorators';
@@ -36,8 +36,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Get all customers (SYSTEM_ADMIN: read-only all orgs, others: view branch customers)' })
   findAll(@Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view all customers across all organizations (read-only)
-      return (this.service as any).findAllSystemAdmin();
+      throw new ForbiddenException('System Admin cannot access operational data.');
     } else if (req.user.role === 'BOSS') {
       // BOSS can view all customers in their organization
       return this.service.findAll(req.user.organizationId);
@@ -52,8 +51,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Get customer by ID (scoped by role)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view any customer (read-only)
-      return (this.service as any).findOneSystemAdmin(id);
+      throw new ForbiddenException('System Admin cannot access operational data.');
     } else if (req.user.role === 'BOSS') {
       // BOSS can view customers in their organization
       return this.service.findOne(id, req.user.organizationId);

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { Roles, SystemAdminReadOnly } from '../common/decorators';
@@ -41,10 +41,7 @@ export class UsersController {
     });
     
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view all users across all organizations (read-only)
-      const users = await (this.service as any).findAllSystemAdmin();
-      console.log('📊 Found users count (SYSTEM_ADMIN):', users.length);
-      return users;
+      throw new ForbiddenException('System Admin cannot view the users list directly.');
     } else {
       // Others see their organization/branch users
       const users = await this.service.findAll(
@@ -61,8 +58,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user by ID (SYSTEM_ADMIN: read-only, others: own org)' })
   findOne(@Param('id') id: string, @Request() req) {
     if (req.user.role === 'SYSTEM_ADMIN') {
-      // SYSTEM_ADMIN can view any user (read-only)
-      return (this.service as any).findOneSystemAdmin(id);
+      throw new ForbiddenException('System Admin cannot view user details directly.');
     } else {
       // Others see their organization users
       return this.service.findOne(id, req.user.organizationId);
