@@ -33,6 +33,7 @@ model Organization {
   address      String
   phone        String
   email        String
+  logo         String?  // URL to organization logo
   isActive     Boolean  @default(true)
   createdById  String
   createdAt    DateTime @default(now())

@@ -280,6 +280,15 @@ export class CreateOrganizationDto {
   email: string;
 
   @ApiProperty({ 
+    example: 'https://res.cloudinary.com/demo/image/upload/organization-logo.jpg',
+    description: 'Organization logo URL from Cloudinary',
+    required: false
+  })
+  @IsString()
+  @IsOptional()
+  logo?: string;
+
+  @ApiProperty({ 
     required: true,
     example: {
       email: 'boss@supermart.rw',
