@@ -18,14 +18,26 @@ export class RolesGuard implements CanActivate {
     // Support System Admin impersonation of an organization via header
     if (user && user.role === 'SYSTEM_ADMIN') {
       const impersonatedOrgId = request.headers['x-organization-id'];
+      const impersonatedBranchId = request.headers['x-branch-id'];
+      
       if (impersonatedOrgId) {
         user.organizationId = impersonatedOrgId;
+        user.isImpersonating = true;
+      }
+      
+      if (impersonatedBranchId) {
+        user.branchId = impersonatedBranchId;
       }
     }
 
     if (!requiredRoles) return true;
 
     if (!user) return false;
+
+    // A SYSTEM_ADMIN impersonating an org gets full operational access
+    if (user.role === 'SYSTEM_ADMIN' && user.isImpersonating) {
+      return true;
+    }
 
     return requiredRoles.some((role) => user.role === role);
   }

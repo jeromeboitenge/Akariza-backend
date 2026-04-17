@@ -19,9 +19,14 @@ export class SystemAdminReadOnlyGuard implements CanActivate {
 
     if (!requiredRoles) return true;
 
-    const { user } = context.switchToHttp().getRequest();
     const request = context.switchToHttp().getRequest();
+    const { user } = request;
     const method = request.method;
+
+    // If impersonating, System Admin has full write access explicitly bypassing read-only restrictions
+    if (user.role === 'SYSTEM_ADMIN' && request.headers['x-organization-id']) {
+      return true;
+    }
 
     // If this endpoint is marked as system admin read-only
     if (isSystemAdminReadOnly && user.role === 'SYSTEM_ADMIN') {
