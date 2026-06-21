@@ -99,7 +99,6 @@ export class UsersController {
 
   @Post('request-password-change-otp')
   @ApiOperation({ summary: 'Request OTP for password change' })
-  @ApiResponse({ status: 200, description: 'OTP sent to email' })
   requestPasswordChangeOtp(@Request() req) {
     return this.service.requestPasswordChangeOtp(req.user.id);
   }
@@ -120,15 +119,9 @@ export class UsersController {
   }
 
   @Patch(':id/reset-password')
-  @Roles('BOSS', 'SYSTEM_ADMIN') // Only BOSS can reset passwords (Requires active workspace for SYSTEM_ADMIN)
+  @Roles('BOSS', 'SYSTEM_ADMIN')
   @ApiOperation({ summary: 'Reset user password (BOSS only)' })
-  @ApiBody({
-    schema: {
-      example: {
-        newPassword: 'tempPassword123'
-      }
-    }
-  })
+  @ApiBody({ schema: { example: { newPassword: 'tempPassword123' } } })
   resetPassword(@Param('id') id: string, @Body() data: any, @Request() req) {
     return this.service.resetPassword(id, req.user.organizationId, data.newPassword);
   }
