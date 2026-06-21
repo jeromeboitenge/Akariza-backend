@@ -139,20 +139,71 @@ export class UsersService {
   }
 
   async deactivate(id: string, organizationId: string | undefined) {
-    // If organizationId is provided (BOSS), verify user belongs to that org
     if (organizationId) {
-      const user = await this.prisma.user.findFirst({
-        where: { id, organizationId },
-      });
-      if (!user) {
-        throw new Error('User not found in your organization');
-      }
+      const user = await this.prisma.user.findFirst({ where: { id, organizationId } });
+      if (!user) throw new Error('User not found in your organization');
     }
-    
+    return this.prisma.user.update({ where: { id }, data: { isActive: false } });
+  }
+
+  async assignRole(userId: string, newRole: string, callerRole: string, callerOrgId: string | undefined) {
+    const VALID_ROLES = ['SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER'];
+    if (!VALID_ROLES.includes(newRole)) {
+      throw new Error(`Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`);
+    }
+
+    // Only SYSTEM_ADMIN can assign BOSS or SYSTEM_ADMIN roles
+    if ((newRole === 'SYSTEM_ADMIN' || newRole === 'BOSS') && callerRole !== 'SYSTEM_ADMIN') {
+      throw new Error('Only SYSTEM_ADMIN can assign BOSS or SYSTEM_ADMIN roles');
+    }
+
+    // Verify target user exists and (for BOSS callers) belongs to their org
+    const where: any = callerOrgId && callerRole !== 'SYSTEM_ADMIN'
+      ? { id: userId, organizationId: callerOrgId }
+      : { id: userId };
+
+    const user = await this.prisma.user.findFirst({ where });
+    if (!user) throw new Error('User not found or outside your organization');
+
+    // Prevent downgrading a SYSTEM_ADMIN by a non-SYSTEM_ADMIN
+    if (user.role === 'SYSTEM_ADMIN' && callerRole !== 'SYSTEM_ADMIN') {
+      throw new Error('Only SYSTEM_ADMIN can modify another SYSTEM_ADMIN');
+    }
+
     return this.prisma.user.update({
-      where: { id },
-      data: { isActive: false },
+      where: { id: userId },
+      data: { role: newRole as any },
+      select: { id: true, email: true, fullName: true, role: true, isActive: true },
     });
+  }
+
+  async setStatus(userId: string, isActive: boolean, callerRole: string, callerOrgId: string | undefined) {
+    const where: any = callerOrgId && callerRole !== 'SYSTEM_ADMIN'
+      ? { id: userId, organizationId: callerOrgId }
+      : { id: userId };
+
+    const user = await this.prisma.user.findFirst({ where });
+    if (!user) throw new Error('User not found or outside your organization');
+    if (user.role === 'SYSTEM_ADMIN' && callerRole !== 'SYSTEM_ADMIN') {
+      throw new Error('Cannot change status of a SYSTEM_ADMIN');
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      select: { id: true, email: true, fullName: true, role: true, isActive: true },
+    });
+  }
+
+  getAvailableRoles() {
+    const roles = ['SYSTEM_ADMIN', 'BOSS', 'MANAGER', 'CASHIER'];
+    const matrix: Record<string, Record<string, string>> = {
+      SYSTEM_ADMIN: { Dashboard:'Full Platform',Organizations:'Full',Users:'Full',Roles:'Full',Products:'Full',Sales:'Full',Purchases:'Full',Stock:'Full',Reports:'Full',Analytics:'Full',Expenses:'Full',Suppliers:'Full',Customers:'Full',Tasks:'Full',Messages:'Full',Settings:'Full' },
+      BOSS:        { Dashboard:'Org Overview',  Organizations:'None', Users:'Org',  Roles:'Org',  Products:'Full',Sales:'Full',Purchases:'Full',Stock:'Full',Reports:'Org', Analytics:'Org', Expenses:'Full',Suppliers:'Full',Customers:'Full',Tasks:'Full',Messages:'Full',Settings:'Org' },
+      MANAGER:     { Dashboard:'Branch',        Organizations:'None', Users:'View', Roles:'View', Products:'Full',Sales:'Full',Purchases:'Full',Stock:'Full',Reports:'Branch',Analytics:'Branch',Expenses:'Full',Suppliers:'Full',Customers:'Full',Tasks:'Full',Messages:'Full',Settings:'None' },
+      CASHIER:     { Dashboard:'Personal',      Organizations:'None', Users:'None', Roles:'None', Products:'View',Sales:'Create',Purchases:'None',Stock:'View',Reports:'None',Analytics:'None', Expenses:'None',Suppliers:'None',Customers:'View', Tasks:'Own', Messages:'Full',Settings:'None' },
+    };
+    return { roles, matrix };
   }
 
   async requestPasswordChangeOtp(userId: string) {

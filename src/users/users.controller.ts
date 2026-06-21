@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards, ForbiddenException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators';
 import { OrganizationContextGuard } from '../common/organization-context.guard';
@@ -10,6 +10,33 @@ import { OrganizationContextGuard } from '../common/organization-context.guard';
 @UseGuards(OrganizationContextGuard)
 export class UsersController {
   constructor(private service: UsersService) {}
+
+  // ── Role Management ────────────────────────────────────────────────────────
+
+  @Get('roles/available')
+  @Roles('BOSS', 'SYSTEM_ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Get available roles and permission matrix' })
+  getAvailableRoles() {
+    return this.service.getAvailableRoles();
+  }
+
+  @Patch(':id/role')
+  @Roles('BOSS', 'SYSTEM_ADMIN')
+  @ApiOperation({ summary: 'Assign a role to a user (BOSS: up to MANAGER; SYSTEM_ADMIN: any)' })
+  @ApiBody({ schema: { example: { role: 'MANAGER' } } })
+  assignRole(@Param('id') id: string, @Body() data: { role: string }, @Request() req) {
+    return this.service.assignRole(id, data.role, req.user.role, req.user.organizationId);
+  }
+
+  @Patch(':id/status')
+  @Roles('BOSS', 'SYSTEM_ADMIN')
+  @ApiOperation({ summary: 'Activate or deactivate a user' })
+  @ApiBody({ schema: { example: { isActive: false } } })
+  setStatus(@Param('id') id: string, @Body() data: { isActive: boolean }, @Request() req) {
+    return this.service.setStatus(id, data.isActive, req.user.role, req.user.organizationId);
+  }
+
+  // ── Standard CRUD ──────────────────────────────────────────────────────────
 
   @Post()
   @Roles('BOSS', 'MANAGER', 'SYSTEM_ADMIN') // SYSTEM_ADMIN cannot create users (read-only)

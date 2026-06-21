@@ -83,6 +83,7 @@ model User {
   auditLogs         AuditLog[]
   sentMessages      Message[]          @relation("SentMessages")
   receivedMessages  Message[]          @relation("ReceivedMessages")
+  loginHistory      LoginHistory[]
 
   @@unique([organizationId, email])
 }
@@ -672,6 +673,8 @@ model LoginHistory {
   userAgent  String?
   success    Boolean
   createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
 }
